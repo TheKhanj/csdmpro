@@ -5,8 +5,8 @@ import (
 	"testing"
 )
 
-func TestCrawlerStats(t *testing.T) {
-	c := Crawler{}
+func TestHttpCrawlerStats(t *testing.T) {
+	c := HttpCrawler{}
 	players, err := c.Stats(1)
 	if err != nil {
 		t.Error(err)
@@ -29,10 +29,10 @@ func TestCrawlerStats(t *testing.T) {
 	}
 }
 
-func TestCrawlerOnline(t *testing.T) {
+func TestHttpCrawlerOnline(t *testing.T) {
 	t.SkipNow()
 
-	c := Crawler{}
+	c := HttpCrawler{}
 	players, err := c.Online()
 	if err != nil {
 		t.Error(err)
