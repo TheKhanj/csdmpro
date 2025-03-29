@@ -59,6 +59,7 @@ func (this *Observer) observeOnlinePlayers() error {
 			pErr(err)
 			continue
 		}
+
 		err = this.Repo.AddOnlinePlayer(playerId)
 		if err != nil {
 			pErr(err)

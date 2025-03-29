@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 )
@@ -76,6 +77,73 @@ func TestObserverSimply(t *testing.T) {
 	case p := <-tof.Observer.GotOffline:
 		if p.Name != player.Name {
 			t.Error("player name does not match")
+		}
+	}
+}
+
+func TestObserverMultipleEvents(t *testing.T) {
+	tof := TestingObserverFactory{}
+	tof.Init(t)
+	defer tof.Deinit()
+
+	go tof.Observer.Start()
+	defer tof.Observer.Stop()
+
+	c := tof.Crawler
+
+	players := make([]Player, 0, 100)
+	for i := 0; i < 100; i++ {
+		players = append(players, Player{
+			Name:    fmt.Sprintf("player-%d", i),
+			Country: "anything",
+		})
+	}
+	player_index := 0
+	for i := 0; i < 10; i++ {
+		p := players[player_index]
+		player_index++
+
+		c.Onlines = append(c.Onlines, p)
+
+		event := <-tof.Observer.GotOnline
+		if event.Name != p.Name {
+			t.Errorf("unexpected player name")
+		}
+	}
+
+	for i := 0; i < 5; i++ {
+		p := players[player_index-1-i]
+
+		c.Onlines = c.Onlines[0 : len(c.Onlines)-1]
+
+		event := <-tof.Observer.GotOffline
+		if event.Name != p.Name {
+			t.Errorf("unexpected player name")
+		}
+	}
+
+	for i := 0; i < 10; i++ {
+		p := players[player_index]
+		player_index++
+
+		c.Onlines = append(c.Onlines, p)
+
+		event := <-tof.Observer.GotOnline
+		if event.Name != p.Name {
+			t.Errorf("unexpected player name")
+		}
+	}
+
+	player_index=5
+	for i := 0; i < 5; i++ {
+		p := players[player_index]
+		player_index++
+
+		c.Onlines = append(c.Onlines, p)
+
+		event := <-tof.Observer.GotOnline
+		if event.Name != p.Name {
+			t.Errorf("unexpected player name")
 		}
 	}
 }

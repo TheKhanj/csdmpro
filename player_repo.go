@@ -19,8 +19,9 @@ func (this *PlayerRepo) PlayerExists(name string) (bool, error) {
 	rows, err := this.Database.Query(`
 		SELECT name
 		FROM players
+		WHERE name = ?
 		LIMIT 1
-	`)
+	`, name)
 	if err != nil {
 		return false, err
 	}
@@ -83,8 +84,9 @@ func (this *PlayerRepo) GetPlayerId(name string) (int, error) {
 	rows, err := this.Database.Query(`
 		SELECT id
 		FROM players
+		WHERE name = ?
 		LIMIT 1
-	`)
+	`, name)
 	if err != nil {
 		return 0, err
 	}
