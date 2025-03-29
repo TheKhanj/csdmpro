@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -16,6 +17,7 @@ type Observer struct {
 	GotOffline     chan Player
 	StatsInterval  time.Duration
 	OnlineInterval time.Duration
+	Ctx            context.Context
 
 	shuttingDown bool
 	wg           sync.WaitGroup
@@ -155,7 +157,9 @@ func (this *Observer) Start() {
 				log.Println(err)
 			}
 
-			time.Sleep(this.OnlineInterval)
+			ctx, cancel := context.WithTimeout(this.Ctx, this.OnlineInterval)
+			defer cancel()
+			<-ctx.Done()
 		}
 	}()
 
@@ -169,7 +173,9 @@ func (this *Observer) Start() {
 
 			this.observePlayers()
 
-			time.Sleep(this.StatsInterval)
+			ctx, cancel := context.WithTimeout(this.Ctx, this.StatsInterval)
+			defer cancel()
+			<-ctx.Done()
 		}
 	}()
 

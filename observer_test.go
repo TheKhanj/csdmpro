@@ -34,6 +34,7 @@ func (this *TestingObserverFactory) Init(t *testing.T) {
 		GotOffline:     make(chan Player),
 		StatsInterval:  0,
 		OnlineInterval: 0,
+		Ctx:            t.Context(),
 	}
 }
 
@@ -134,7 +135,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 		}
 	}
 
-	player_index=5
+	player_index = 5
 	for i := 0; i < 5; i++ {
 		p := players[player_index]
 		player_index++
