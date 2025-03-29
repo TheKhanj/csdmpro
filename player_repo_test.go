@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"database/sql"
 	"os"
 	"testing"
@@ -9,51 +8,70 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func getRepoFactory(ctx context.Context) (*PlayerRepoFactory, error) {
+type TestingRepoFactory struct {
+	Repo *PlayerRepo
+
+	tmpFilePath string
+	db          *sql.DB
+}
+
+func (this *TestingRepoFactory) Deinit() error {
+	if this.tmpFilePath != "" {
+		err := os.Remove(this.tmpFilePath)
+		if err != nil {
+			return err
+		}
+	}
+	if this.db != nil {
+		err := this.db.Close()
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (this *TestingRepoFactory) Init() error {
 	tempFile, err := os.CreateTemp("", "csdmpro-test-*.db")
 	if err != nil {
-		return nil, err
+		return err
 	}
 	tempFile.Close()
 
-	db, err := sql.Open("sqlite3", tempFile.Name())
+	this.tmpFilePath = tempFile.Name()
+	this.db, err = sql.Open("sqlite3", tempFile.Name())
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	go func() {
-		select {
-		case <-ctx.Done():
-			db.Close()
-		}
-	}()
-
-	repoFactory := &PlayerRepoFactory{
-		Database: db,
-	}
-
-	return repoFactory, nil
-}
-
-func getRepo(ctx context.Context) (*PlayerRepo, error) {
-	f, err := getRepoFactory(ctx)
-	if err != nil {
-		return nil, err
+	f := &PlayerRepoFactory{
+		Database: this.db,
 	}
 
 	err = f.assertTables()
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return f.Create()
+	repo, err := f.Create()
+	if err != nil {
+		return err
+	}
+
+	this.Repo = repo
+	return nil
 }
 
 func TestPlayerRepoPlayer(t *testing.T) {
-	repo, err := getRepo(t.Context())
+	trf := TestingRepoFactory{}
+	err := trf.Init()
 	if err != nil {
 		t.Error(err)
 	}
+	defer trf.Deinit()
+
+	repo := trf.Repo
 
 	err = repo.AddPlayer(Player{
 		Name:    "thekhanj",
@@ -78,10 +96,14 @@ func TestPlayerRepoPlayer(t *testing.T) {
 }
 
 func TestPlayerRepoOnline(t *testing.T) {
-	repo, err := getRepo(t.Context())
+	trf := TestingRepoFactory{}
+	err := trf.Init()
 	if err != nil {
 		t.Error(err)
 	}
+	defer trf.Deinit()
+
+	repo := trf.Repo
 
 	err = repo.AddPlayer(Player{
 		Name:    "thekhanj",
