@@ -12,3 +12,10 @@ build: $(GO_FILES) wire
 build_watch: $(GO_FILES)
 	printf "%s\n" $(GO_FILES) | \
     entr -c -c $(MAKE) build
+
+run: build
+	./csdmpro
+
+run_watch: $(GO_FILES)
+	printf "%s\n" $(GO_FILES) | \
+    entr -c -c $(MAKE) run
