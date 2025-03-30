@@ -1,5 +1,7 @@
-GO_FILES = $(shell find . -type f -name '*.go') \
-					 $(shell find ../tgool -type f -name '*.go')
+GO_FILES = $(shell find core -type f -name '*.go') \
+						$(shell find tg -type f -name '*.go') \
+						main.go wire.go \
+						$(shell find ../tgool -type f -name '*.go')
 
 all: build
 
@@ -18,4 +20,4 @@ run: build
 
 run_watch: $(GO_FILES)
 	printf "%s\n" $(GO_FILES) | \
-    entr -c -c $(MAKE) run
+    entr -s -r -c -c "$(MAKE) run"
