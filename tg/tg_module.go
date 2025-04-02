@@ -74,7 +74,22 @@ func ProvideTg(controllers TgControllers) *Server {
 	return s
 }
 
+func ProvideNotifier(
+	observer *core.Observer,
+	watchlistRepo *repo.WatchlistRepo,
+	playerRepo *core.PlayerRepo,
+	server *Server,
+) *Notifier {
+	return &Notifier{
+		gotOnline:     observer.GotOnline,
+		gotOffline:    observer.GotOffline,
+		watchlistRepo: watchlistRepo,
+		playerRepo:    playerRepo,
+		bot:           server.bot,
+	}
+}
+
 var TgModule = wire.NewSet(
 	ProvideTg, ProvideControllers, ProvideWatchlistRepo,
-	ProvideWatchlistService,
+	ProvideWatchlistService, ProvideNotifier,
 )

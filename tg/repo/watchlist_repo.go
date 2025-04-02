@@ -53,6 +53,34 @@ func (this *WatchlistRepo) IsInWatchlist(
 	return false, nil
 }
 
+func (this *WatchlistRepo) GetInterested(
+	playerId core.PlayerId,
+) ([]int64, error) {
+	rows, err := this.db.Query(`
+	SELECT w.chat_id
+	FROM watchlist as w
+	WHERE w.player_id = ?
+	`, playerId)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	chatIds := make([]int64, 0)
+
+	for rows.Next() {
+		var chatId int64
+		err = rows.Scan(&chatId)
+		if err != nil {
+			return nil, err
+		}
+
+		chatIds = append(chatIds, chatId)
+	}
+
+	return chatIds, nil
+}
+
 func (this *WatchlistRepo) Add(
 	chatId int64, playerId core.PlayerId,
 ) error {

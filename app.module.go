@@ -9,15 +9,18 @@ import (
 type App struct {
 	CoreObserver *core.Observer
 	TgServer     *tg.Server
+	Notifier     *tg.Notifier
 }
 
 func ProvideApp(
 	observer *core.Observer,
 	tgServer *tg.Server,
+	notifier *tg.Notifier,
 ) *App {
 	return &App{
 		CoreObserver: observer,
 		TgServer:     tgServer,
+		Notifier:     notifier,
 	}
 }
 

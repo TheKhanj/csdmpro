@@ -81,7 +81,7 @@ func (this *PlayerRepo) Onlines() ([]Player, error) {
 	return players, nil
 }
 
-func (this *PlayerRepo) GetPlayerId(name string) (int, error) {
+func (this *PlayerRepo) GetPlayerId(name string) (PlayerId, error) {
 	rows, err := this.Database.Query(`
 		SELECT id
 		FROM players
@@ -95,7 +95,7 @@ func (this *PlayerRepo) GetPlayerId(name string) (int, error) {
 
 	rows.Next()
 
-	var id int
+	var id PlayerId
 	err = rows.Scan(&id)
 	if err != nil {
 		return 0, err
@@ -125,13 +125,13 @@ func (this *PlayerRepo) GetPlayer(id PlayerId) (Player, error) {
 	return p, nil
 }
 
-func (this *PlayerRepo) AddOnlinePlayer(playerId int) error {
+func (this *PlayerRepo) AddOnlinePlayer(playerId PlayerId) error {
 	insertSQL := `INSERT INTO players_online (player_id) VALUES (?)`
 	_, err := this.Database.Exec(insertSQL, playerId)
 	return err
 }
 
-func (this *PlayerRepo) RemoveOnlinePlayer(playerId int) error {
+func (this *PlayerRepo) RemoveOnlinePlayer(playerId PlayerId) error {
 	insertSQL := `DELETE FROM players_online WHERE player_id = ?`
 	_, err := this.Database.Exec(insertSQL, playerId)
 	return err
