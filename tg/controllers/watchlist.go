@@ -237,18 +237,21 @@ func (this *WatchlistController) RemovePlayersIndex(
 
 Select a player to remove from your watchlist`
 
-	currentPlayers := []string{"player-1", "player-2"}
+	tps, err := this.Service.GetTracking(chatId)
+	if err != nil {
+		return nil, err
+	}
 
 	msg := tgbotapi.NewMessage(chatId, txt)
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 
-	for _, player := range currentPlayers {
+	for _, tp := range tps {
 		rows = append(rows,
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(
-					fmt.Sprintf("🚫 %s", player),
-					fmt.Sprintf("/watchlist/a/delete/players/%s", player),
+					fmt.Sprintf("🚫 %s", tp.Player.Name),
+					fmt.Sprintf("/watchlist/a/delete/players/%d", tp.Id),
 				),
 			),
 		)

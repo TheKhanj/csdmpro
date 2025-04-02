@@ -29,6 +29,7 @@ func (this *WatchlistService) GetTracking(chatId int64) ([]TrackingPlayer, error
 		}
 		ret = append(ret, TrackingPlayer{
 			Player:   p,
+			Id:       id,
 			IsOnline: isOnline,
 		})
 	}
@@ -38,5 +39,6 @@ func (this *WatchlistService) GetTracking(chatId int64) ([]TrackingPlayer, error
 
 type TrackingPlayer struct {
 	Player   core.Player
+	Id       core.PlayerId
 	IsOnline bool
 }
