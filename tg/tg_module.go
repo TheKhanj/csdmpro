@@ -39,12 +39,18 @@ func ProvideControllers(
 	watchlistRepo *repo.WatchlistRepo,
 	service *service.WatchlistService,
 ) TgControllers {
+	watchlist := &controllers.WatchlistController{
+		Service:       service,
+		PlayerRepo:    playerRepo,
+		WatchlistRepo: watchlistRepo,
+	}
+	start := &controllers.StartController{
+		WatchlistController: watchlist,
+	}
+
 	return TgControllers{
-		&controllers.WatchlistController{
-			Service:       service,
-			PlayerRepo:    playerRepo,
-			WatchlistRepo: watchlistRepo,
-		},
+		watchlist,
+		start,
 	}
 }
 
