@@ -6,15 +6,44 @@ import (
 
 	"github.com/google/wire"
 	"github.com/thekhanj/csdmpro/core"
+	"github.com/thekhanj/csdmpro/db"
 	"github.com/thekhanj/csdmpro/tg/controllers"
+	"github.com/thekhanj/csdmpro/tg/repo"
+	"github.com/thekhanj/csdmpro/tg/service"
 	"github.com/thekhanj/tgool"
 )
 
 type TgControllers []tgool.Controller
 
-func ProvideControllers(repo *core.PlayerRepo) TgControllers {
+func ProvideWatchlistRepo(db db.Database) *repo.WatchlistRepo {
+	repo, err := repo.CreateWatchlistRepo(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return repo
+}
+
+func ProvideWatchlistService(
+	playerRepo *core.PlayerRepo,
+	watchlistRepo *repo.WatchlistRepo,
+) *service.WatchlistService {
+	return &service.WatchlistService{
+		PlayerRepo:    playerRepo,
+		WatchlistRepo: watchlistRepo,
+	}
+}
+
+func ProvideControllers(
+	playerRepo *core.PlayerRepo,
+	watchlistRepo *repo.WatchlistRepo,
+	service *service.WatchlistService,
+) TgControllers {
 	return TgControllers{
-		&controllers.WatchlistController{Repo: repo},
+		&controllers.WatchlistController{
+			Service:    service,
+			PlayerRepo: playerRepo,
+		},
 	}
 }
 
@@ -39,5 +68,6 @@ func ProvideTg(controllers TgControllers) *Server {
 }
 
 var TgModule = wire.NewSet(
-	ProvideTg, ProvideControllers,
+	ProvideTg, ProvideControllers, ProvideWatchlistRepo,
+	ProvideWatchlistService,
 )

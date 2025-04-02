@@ -3,23 +3,26 @@ package controllers
 import (
 	"fmt"
 	"log"
+	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/thekhanj/csdmpro/core"
+	"github.com/thekhanj/csdmpro/tg/service"
 	"github.com/thekhanj/tgool"
 )
 
 type WatchlistController struct {
-	Repo *core.PlayerRepo
+	PlayerRepo *core.PlayerRepo
+	Service    *service.WatchlistService
 }
 
 func (this *WatchlistController) AddRoutes(b *tgool.RouterBuilder) {
 	b.SetPrefixRoute("/watchlist").
 		AddMethod("", "Index").
-		AddMethod("add-users", "AddUsersIndex").
-		AddMethod("remove-users", "RemoveUsersIndex").
-		AddMethod("a/post/users/:user", "AddUser").
-		AddMethod("a/delete/users/:user", "RemoveUser")
+		AddMethod("add-players/:page", "AddPlayersIndex").
+		AddMethod("remove-players", "RemovePlayersIndex").
+		AddMethod("a/post/players/:playerId", "AddPlayer").
+		AddMethod("a/delete/players/:playerId", "RemovePlayer")
 }
 
 func (this *WatchlistController) Index(
@@ -32,23 +35,26 @@ func (this *WatchlistController) Index(
 Keep track of your favorite players! I'll notify you when they join or leave the server.
 Just add them to your watchlist, and I'll handle the rest. 🚀`
 
-	players, err := this.Repo.List(0, 10)
+	tps, err := this.Service.GetTracking(chatId)
 	if err != nil {
 		return nil, err
 	}
-	currentUsers := []string{}
-	for _, p := range players {
-		currentUsers = append(currentUsers, p.Name)
-	}
 
 	txt += "\n\n"
-	if len(currentUsers) == 0 {
+	if len(tps) == 0 {
 		txt += "👀 You’re not tracking anyone yet."
 	} else {
 		txt += "👀 Currently Tracked Players:\n"
-		for _, user := range currentUsers {
+		for _, tp := range tps {
 			// todo: show red for offline
-			txt += fmt.Sprintf("🟢 %s\n", user)
+
+			var status string
+			if tp.IsOnline {
+				status = "🟢"
+			} else {
+				status = "🔴"
+			}
+			txt += fmt.Sprintf("%s %s\n", status, tp.Player.Name)
 		}
 	}
 
@@ -60,11 +66,11 @@ Just add them to your watchlist, and I'll handle the rest. 🚀`
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"➕ Add to Watchlist",
-				"/watchlist/add-users",
+				"/watchlist/add-players/0",
 			),
 			tgbotapi.NewInlineKeyboardButtonData(
 				"➖ Remove from Watchlist",
-				"/watchlist/remove-users",
+				"/watchlist/remove-players",
 			),
 		),
 		tgbotapi.NewInlineKeyboardRow(
@@ -80,34 +86,87 @@ Just add them to your watchlist, and I'll handle the rest. 🚀`
 	return msg, nil
 }
 
-func (this *WatchlistController) AddUsersIndex(
+func (this *WatchlistController) AddPlayersIndex(
 	ctx tgool.Context,
 ) (tgbotapi.Chattable, error) {
 	chatId := ctx.GetChatId()
-
+	page, err := strconv.Atoi(ctx.Params().ByName("page"))
+	if err != nil {
+		return nil, err
+	}
 	txt := `➕ Add to Watchlist
 
 Select a player to add to your watchlist`
 
-	allUsers := []string{"user-1", "user-2"}
+	players, err := this.PlayerRepo.List(page*20, 20)
+	if err != nil {
+		return nil, err
+	}
 
 	msg := tgbotapi.NewMessage(chatId, txt)
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 
-	// TODO: add pagination
-	for _, user := range allUsers {
-		rows = append(rows,
-			tgbotapi.NewInlineKeyboardRow(
-				tgbotapi.NewInlineKeyboardButtonData(
-					fmt.Sprintf("✔️ %s", user),
-					fmt.Sprintf("/watchlist/a/post/users/%s", user),
-				),
+	getTwoPlayerKeyboard := func(
+		p1 *core.Player, p2 *core.Player,
+	) ([]tgbotapi.InlineKeyboardButton, error) {
+		// TODO: what is this shit? fix it
+		p1Id, err := this.PlayerRepo.GetPlayerId(p1.Name)
+		if err != nil {
+			return nil, err
+		}
+		p2Id, err := this.PlayerRepo.GetPlayerId(p2.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		row := tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("✔️ %s", p1.Name),
+				fmt.Sprintf("/watchlist/a/post/players/%d", p1Id),
+			),
+			tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("✔️ %s", p2.Name),
+				fmt.Sprintf("/watchlist/a/post/players/%d", p2Id),
+			),
+		)
+
+		return row, nil
+	}
+
+	for i := 0; i < len(players); i += 2 {
+		p1 := players[i]
+		p2 := players[i+1]
+		row, err := getTwoPlayerKeyboard(&p1, &p2)
+		if err != nil {
+			return nil, err
+		}
+		rows = append(rows, row)
+	}
+
+	paginationButtons := []tgbotapi.InlineKeyboardButton{}
+	if page != 0 {
+		paginationButtons = append(
+			paginationButtons, tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("⬅️ Previous Page"),
+				fmt.Sprintf("/watchlist/add-players/%d", page-1),
 			),
 		)
 	}
 
+	// TODO: fix
+	// if page!=end
+
+	fmt.Printf("/watchlist/add-players/%d", page+1)
+	paginationButtons = append(
+		paginationButtons, tgbotapi.NewInlineKeyboardButtonData(
+			fmt.Sprintf("Next Page ➡️"),
+			fmt.Sprintf("/watchlist/add-players/%d", page+1),
+		),
+	)
+
 	rows = append(rows,
+		tgbotapi.NewInlineKeyboardRow(paginationButtons...),
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"🔙 Back",
@@ -121,25 +180,25 @@ Select a player to add to your watchlist`
 	return msg, nil
 }
 
-func (this *WatchlistController) AddUser(
+func (this *WatchlistController) AddPlayer(
 	ctx tgool.Context,
 ) (tgbotapi.Chattable, error) {
-	selectedUser := ctx.Params().ByName("user")
-	log.Printf("selected user (%s)", selectedUser)
+	selectedPlayerId := ctx.Params().ByName("playerId")
+	log.Printf("selected player (%s)", selectedPlayerId)
 
 	ctx.Redirect("/watchlist")
 
 	ctx.Bot().Request(
 		tgbotapi.NewCallback(
 			ctx.Update().CallbackQuery.ID,
-			fmt.Sprintf("user %s added to watchlist", selectedUser),
+			fmt.Sprintf("player %s added to watchlist", selectedPlayerId),
 		),
 	)
 
 	return this.Index(ctx)
 }
 
-func (this *WatchlistController) RemoveUsersIndex(
+func (this *WatchlistController) RemovePlayersIndex(
 	ctx tgool.Context,
 ) (tgbotapi.Chattable, error) {
 	chatId := ctx.GetChatId()
@@ -148,18 +207,18 @@ func (this *WatchlistController) RemoveUsersIndex(
 
 Select a player to remove from your watchlist`
 
-	currentUsers := []string{"user-1", "user-2"}
+	currentPlayers := []string{"player-1", "player-2"}
 
 	msg := tgbotapi.NewMessage(chatId, txt)
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 
-	for _, user := range currentUsers {
+	for _, player := range currentPlayers {
 		rows = append(rows,
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(
-					fmt.Sprintf("🚫 %s", user),
-					fmt.Sprintf("/watchlist/a/delete/users/%s", user),
+					fmt.Sprintf("🚫 %s", player),
+					fmt.Sprintf("/watchlist/a/delete/players/%s", player),
 				),
 			),
 		)
@@ -179,18 +238,18 @@ Select a player to remove from your watchlist`
 	return msg, nil
 }
 
-func (this *WatchlistController) RemoveUser(
+func (this *WatchlistController) RemovePlayer(
 	ctx tgool.Context,
 ) (tgbotapi.Chattable, error) {
-	selectedUser := ctx.Params().ByName("user")
-	log.Printf("selected user (%s)", selectedUser)
+	selectedPlayer := ctx.Params().ByName("player")
+	log.Printf("selected player (%s)", selectedPlayer)
 
 	ctx.Redirect("/watchlist")
 
 	ctx.Bot().Request(
 		tgbotapi.NewCallback(
 			ctx.Update().CallbackQuery.ID,
-			fmt.Sprintf("user %s removed from watchlist", selectedUser),
+			fmt.Sprintf("player %s removed from watchlist", selectedPlayer),
 		),
 	)
 
