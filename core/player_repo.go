@@ -103,6 +103,28 @@ func (this *PlayerRepo) GetPlayerId(name string) (int, error) {
 	return id, nil
 }
 
+func (this *PlayerRepo) GetPlayer(id PlayerId) (Player, error) {
+	rows, err := this.Database.Query(`
+		SELECT p.name, p.country
+		FROM players as p
+		WHERE id = ?
+		LIMIT 1
+	`, id)
+	if err != nil {
+		return Player{}, err
+	}
+	defer rows.Close()
+
+	rows.Next()
+
+	var p Player
+	err = rows.Scan(&p.Name, &p.Country)
+	if err != nil {
+		return Player{}, err
+	}
+	return p, nil
+}
+
 func (this *PlayerRepo) AddOnlinePlayer(playerId int) error {
 	insertSQL := `INSERT INTO players_online (player_id) VALUES (?)`
 	_, err := this.Database.Exec(insertSQL, playerId)
@@ -115,7 +137,7 @@ func (this *PlayerRepo) RemoveOnlinePlayer(playerId int) error {
 	return err
 }
 
-func (this *PlayerRepo) List(offset int32, limit int32) ([]Player, error) {
+func (this *PlayerRepo) List(offset int, limit int) ([]Player, error) {
 	rows, err := this.Database.Query(`
 		SELECT p.name, p.country
 		FROM players as p
