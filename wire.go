@@ -4,11 +4,10 @@ package main
 
 import (
 	"github.com/google/wire"
-	"github.com/thekhanj/csdmpro/tg"
 )
 
-func WireBuild() *tg.Server {
-	wire.Build(tg.TgModule)
+func WireBuild() *App {
+	wire.Build(AppModule)
 
-	return &tg.Server{}
+	return &App{}
 }

@@ -5,10 +5,13 @@ import (
 	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/thekhanj/csdmpro/core"
 	"github.com/thekhanj/tgool"
 )
 
-type WatchlistController struct{}
+type WatchlistController struct {
+	Repo *core.PlayerRepo
+}
 
 func (this *WatchlistController) AddRoutes(b *tgool.RouterBuilder) {
 	b.SetPrefixRoute("/watchlist").
@@ -29,7 +32,15 @@ func (this *WatchlistController) Index(
 Keep track of your favorite players! I'll notify you when they join or leave the server.
 Just add them to your watchlist, and I'll handle the rest. 🚀`
 
-	currentUsers := []string{"user-1", "user-2"}
+	players, err := this.Repo.List(0, 10)
+	if err != nil {
+		return nil, err
+	}
+	currentUsers := []string{}
+	for _, p := range players {
+		currentUsers = append(currentUsers, p.Name)
+	}
+
 	txt += "\n\n"
 	if len(currentUsers) == 0 {
 		txt += "👀 You’re not tracking anyone yet."

@@ -114,6 +114,37 @@ func (this *PlayerRepo) RemoveOnlinePlayer(playerId int) error {
 	return err
 }
 
+func (this *PlayerRepo) List(offset int32, limit int32) ([]Player, error) {
+	rows, err := this.Database.Query(`
+		SELECT p.name, p.country
+		FROM players as p
+		ORDER BY p.id
+		LIMIT ? OFFSET ?
+	`, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	players := make([]Player, 0, 0)
+
+	for rows.Next() {
+		var name string
+		var country string
+		err = rows.Scan(&name, &country)
+		if err != nil {
+			return nil, err
+		}
+
+		players = append(players, Player{
+			Name:    name,
+			Country: country,
+		})
+	}
+
+	return players, nil
+}
+
 type PlayerRepoFactory struct {
 	Database *sql.DB
 }

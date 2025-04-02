@@ -1,5 +1,6 @@
 GO_FILES = $(shell find core -type f -name '*.go') \
 						$(shell find tg -type f -name '*.go') \
+						$(shell find db -type f -name '*.go') \
 						main.go wire.go \
 						$(shell find ../tgool -type f -name '*.go')
 

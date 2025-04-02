@@ -5,15 +5,16 @@ import (
 	"os"
 
 	"github.com/google/wire"
+	"github.com/thekhanj/csdmpro/core"
 	"github.com/thekhanj/csdmpro/tg/controllers"
 	"github.com/thekhanj/tgool"
 )
 
 type TgControllers []tgool.Controller
 
-func ProvideControllers() TgControllers {
+func ProvideControllers(repo *core.PlayerRepo) TgControllers {
 	return TgControllers{
-		&controllers.WatchlistController{},
+		&controllers.WatchlistController{Repo: repo},
 	}
 }
 
@@ -37,4 +38,6 @@ func ProvideTg(controllers TgControllers) *Server {
 	return s
 }
 
-var TgModule = wire.NewSet(ProvideTg, ProvideControllers)
+var TgModule = wire.NewSet(
+	ProvideTg, ProvideControllers,
+)
