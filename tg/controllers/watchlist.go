@@ -67,6 +67,12 @@ Just add them to your watchlist, and I'll handle the rest. 🚀`
 				"/watchlist/remove-users",
 			),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				"🔄 Refresh List",
+				"/watchlist",
+			),
+		),
 	)
 
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
