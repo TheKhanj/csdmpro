@@ -1,4 +1,4 @@
-package tg
+package repo
 
 import (
 	"database/sql"
@@ -10,7 +10,7 @@ type WatchlistRepo struct {
 	db *sql.DB
 }
 
-func (this *WatchlistRepo) Watchlist(chatId int64) ([]core.PlayerId, error) {
+func (this *WatchlistRepo) List(chatId int64) ([]core.PlayerId, error) {
 	rows, err := this.db.Query(`
 	SELECT w.player_id
 	FROM watchlist as w
@@ -39,7 +39,7 @@ func (this *WatchlistRepo) Watchlist(chatId int64) ([]core.PlayerId, error) {
 func (this *WatchlistRepo) IsInWatchlist(
 	chatId int64, playerId core.PlayerId,
 ) (bool, error) {
-	ids, err := this.Watchlist(chatId)
+	ids, err := this.List(chatId)
 	if err != nil {
 		return false, err
 	}
@@ -53,7 +53,7 @@ func (this *WatchlistRepo) IsInWatchlist(
 	return false, nil
 }
 
-func (this *WatchlistRepo) AddToWatchlist(
+func (this *WatchlistRepo) Add(
 	chatId int64, playerId core.PlayerId,
 ) error {
 	insertSQL := `INSERT INTO watchlist (chat_id, player_id) VALUES (?, ?)`
@@ -61,7 +61,7 @@ func (this *WatchlistRepo) AddToWatchlist(
 	return err
 }
 
-func (this *WatchlistRepo) RemoveFromWatchlist(
+func (this *WatchlistRepo) Remove(
 	chatId int64, playerId core.PlayerId,
 ) error {
 	insertSQL := `DELETE FROM watchlist WHERE chat_id = ? AND player_id = ?`

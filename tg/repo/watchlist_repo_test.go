@@ -1,4 +1,4 @@
-package tg
+package repo
 
 import (
 	"database/sql"
@@ -57,16 +57,16 @@ func TestWatchlistRepoSimply(t *testing.T) {
 		t.Fatal("expected watchlist to initially be empty")
 	}
 
-	err = repo.AddToWatchlist(chatId, 1)
+	err = repo.Add(chatId, 1)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = repo.AddToWatchlist(chatId, 2)
+	err = repo.Add(chatId, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	ids, err = repo.Watchlist(chatId)
+	ids, err = repo.List(chatId)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +90,7 @@ func TestWatchlistRepoSimply(t *testing.T) {
 		t.Fatal("expected player-3 not to be watched")
 	}
 
-	err = repo.RemoveFromWatchlist(chatId, 2)
+	err = repo.Remove(chatId, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
