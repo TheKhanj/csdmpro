@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"fmt"
+	"log"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/thekhanj/tgool"
@@ -12,8 +13,10 @@ type WatchlistController struct{}
 func (this *WatchlistController) AddRoutes(b *tgool.RouterBuilder) {
 	b.SetPrefixRoute("/watchlist").
 		AddMethod("", "Index").
-		AddMethod("/users-add", "UsersAddIndex").
-		AddMethod("/users-remove", "UsersRemoveIndex")
+		AddMethod("add-users", "AddUsersIndex").
+		AddMethod("remove-users", "RemoveUsersIndex").
+		AddMethod("a/post/users/:user", "AddUser").
+		AddMethod("a/delete/users/:user", "RemoveUser")
 }
 
 func (this *WatchlistController) Index(
@@ -31,7 +34,7 @@ Just add them to your watchlist, and I'll handle the rest. 🚀`
 	if len(currentUsers) == 0 {
 		txt += "👀 You’re not tracking anyone yet."
 	} else {
-		txt += "👀 Currently Tracked Players:\n\n"
+		txt += "👀 Currently Tracked Players:\n"
 		for _, user := range currentUsers {
 			// todo: show red for offline
 			txt += fmt.Sprintf("🟢 %s\n", user)
@@ -46,11 +49,11 @@ Just add them to your watchlist, and I'll handle the rest. 🚀`
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				"➕ Add to Watchlist",
-				"/watchlist/users-add",
+				"/watchlist/add-users",
 			),
 			tgbotapi.NewInlineKeyboardButtonData(
 				"➖ Remove from Watchlist",
-				"/watchlist/users-remove",
+				"/watchlist/remove-users",
 			),
 		),
 	)
@@ -60,7 +63,7 @@ Just add them to your watchlist, and I'll handle the rest. 🚀`
 	return msg, nil
 }
 
-func (this *WatchlistController) UsersAddIndex(
+func (this *WatchlistController) AddUsersIndex(
 	ctx tgool.Context,
 ) (tgbotapi.Chattable, error) {
 	chatId := ctx.GetChatId()
@@ -81,7 +84,7 @@ Select a player to add to your watchlist`
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(
 					fmt.Sprintf("✔️ %s", user),
-					"/watchlist/users-add/%s",
+					fmt.Sprintf("/watchlist/a/post/users/%s", user),
 				),
 			),
 		)
@@ -101,7 +104,25 @@ Select a player to add to your watchlist`
 	return msg, nil
 }
 
-func (this *WatchlistController) UsersRemoveIndex(
+func (this *WatchlistController) AddUser(
+	ctx tgool.Context,
+) (tgbotapi.Chattable, error) {
+	selectedUser := ctx.Params().ByName("user")
+	log.Printf("selected user (%s)", selectedUser)
+
+	ctx.Redirect("/watchlist")
+
+	ctx.Bot().Request(
+		tgbotapi.NewCallback(
+			ctx.Update().CallbackQuery.ID,
+			fmt.Sprintf("user %s added to watchlist", selectedUser),
+		),
+	)
+
+	return this.Index(ctx)
+}
+
+func (this *WatchlistController) RemoveUsersIndex(
 	ctx tgool.Context,
 ) (tgbotapi.Chattable, error) {
 	chatId := ctx.GetChatId()
@@ -121,7 +142,7 @@ Select a player to remove from your watchlist`
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(
 					fmt.Sprintf("🚫 %s", user),
-					"/watchlist/users-remove/%s",
+					fmt.Sprintf("/watchlist/a/delete/users/%s", user),
 				),
 			),
 		)
@@ -139,6 +160,24 @@ Select a player to remove from your watchlist`
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
 
 	return msg, nil
+}
+
+func (this *WatchlistController) RemoveUser(
+	ctx tgool.Context,
+) (tgbotapi.Chattable, error) {
+	selectedUser := ctx.Params().ByName("user")
+	log.Printf("selected user (%s)", selectedUser)
+
+	ctx.Redirect("/watchlist")
+
+	ctx.Bot().Request(
+		tgbotapi.NewCallback(
+			ctx.Update().CallbackQuery.ID,
+			fmt.Sprintf("user %s removed from watchlist", selectedUser),
+		),
+	)
+
+	return this.Index(ctx)
 }
 
 var _ tgool.Controller = (*WatchlistController)(nil)
