@@ -7,13 +7,15 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/thekhanj/csdmpro/core"
+	"github.com/thekhanj/csdmpro/tg/repo"
 	"github.com/thekhanj/csdmpro/tg/service"
 	"github.com/thekhanj/tgool"
 )
 
 type WatchlistController struct {
-	PlayerRepo *core.PlayerRepo
-	Service    *service.WatchlistService
+	PlayerRepo    *core.PlayerRepo
+	WatchlistRepo *repo.WatchlistRepo
+	Service       *service.WatchlistService
 }
 
 func (this *WatchlistController) AddRoutes(b *tgool.RouterBuilder) {
@@ -183,17 +185,45 @@ Select a player to add to your watchlist`
 func (this *WatchlistController) AddPlayer(
 	ctx tgool.Context,
 ) (tgbotapi.Chattable, error) {
-	selectedPlayerId := ctx.Params().ByName("playerId")
-	log.Printf("selected player (%s)", selectedPlayerId)
+	chatId := ctx.GetChatId()
+	playerId, err := strconv.Atoi(ctx.Params().ByName("playerId"))
+	if err != nil {
+		return nil, err
+	}
+
+	id := core.PlayerId(playerId)
+	player, err := this.PlayerRepo.GetPlayer(id)
+	if err != nil {
+		return nil, err
+	}
+
+	isWatched, err := this.WatchlistRepo.IsInWatchlist(chatId, id)
+	if err != nil {
+		return nil, err
+	}
+
+	if isWatched {
+		ctx.Bot().Request(
+			tgbotapi.NewCallback(
+				ctx.Update().CallbackQuery.ID,
+				fmt.Sprintf("player %s is already in the watchlist", player.Name),
+			),
+		)
+	} else {
+		err = this.WatchlistRepo.Add(chatId, id)
+		if err != nil {
+			return nil, err
+		}
+
+		ctx.Bot().Request(
+			tgbotapi.NewCallback(
+				ctx.Update().CallbackQuery.ID,
+				fmt.Sprintf("player %s added into the watchlist", player.Name),
+			),
+		)
+	}
 
 	ctx.Redirect("/watchlist")
-
-	ctx.Bot().Request(
-		tgbotapi.NewCallback(
-			ctx.Update().CallbackQuery.ID,
-			fmt.Sprintf("player %s added to watchlist", selectedPlayerId),
-		),
-	)
 
 	return this.Index(ctx)
 }

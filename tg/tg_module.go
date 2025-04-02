@@ -41,8 +41,9 @@ func ProvideControllers(
 ) TgControllers {
 	return TgControllers{
 		&controllers.WatchlistController{
-			Service:    service,
-			PlayerRepo: playerRepo,
+			Service:       service,
+			PlayerRepo:    playerRepo,
+			WatchlistRepo: watchlistRepo,
 		},
 	}
 }
