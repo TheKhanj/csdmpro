@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"github.com/google/wire"
+	_ "github.com/mattn/go-sqlite3"
 )
 
 type Database *sql.DB

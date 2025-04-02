@@ -2,8 +2,9 @@ package core
 
 import (
 	"database/sql"
-	"fmt"
 )
+
+type PlayerId int
 
 type PlayerRepo struct {
 	Database *sql.DB
@@ -145,30 +146,15 @@ func (this *PlayerRepo) List(offset int32, limit int32) ([]Player, error) {
 	return players, nil
 }
 
-type PlayerRepoFactory struct {
-	Database *sql.DB
-}
-
-func (this *PlayerRepoFactory) Create() (*PlayerRepo, error) {
-	err := this.assertTables()
-	if err != nil {
-		return nil, fmt.Errorf("repo-factory: assert-tables: %s", err.Error())
-	}
-
-	return &PlayerRepo{
-		Database: this.Database,
-	}, nil
-}
-
-func (this *PlayerRepoFactory) assertTables() error {
+func CreatePlayerRepo(db *sql.DB) (*PlayerRepo, error) {
 	createPlayersStatsTable := `CREATE TABLE IF NOT EXISTS players (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
 		name TEXT UNIQUE,
 		country TEXT
 	);`
-	_, err := this.Database.Exec(createPlayersStatsTable)
+	_, err := db.Exec(createPlayersStatsTable)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	createPlayersOnlineTable := `CREATE TABLE IF NOT EXISTS players_online (
@@ -176,10 +162,10 @@ func (this *PlayerRepoFactory) assertTables() error {
 		player_id INTEGER UNIQUE,
 		FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE RESTRICT
 	);`
-	_, err = this.Database.Exec(createPlayersOnlineTable)
+	_, err = db.Exec(createPlayersOnlineTable)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &PlayerRepo{Database: db}, nil
 }

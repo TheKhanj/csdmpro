@@ -10,11 +10,7 @@ import (
 )
 
 func ProvidePlayerRepo(db db.Database) *PlayerRepo {
-	rf := PlayerRepoFactory{
-		Database: db,
-	}
-
-	repo, err := rf.Create()
+	repo, err := CreatePlayerRepo(db)
 	if err != nil {
 		log.Fatal(err)
 	}
