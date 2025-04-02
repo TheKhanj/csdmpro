@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"fmt"
-	"log"
 	"strconv"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -274,17 +273,31 @@ Select a player to remove from your watchlist`
 func (this *WatchlistController) RemovePlayer(
 	ctx tgool.Context,
 ) (tgbotapi.Chattable, error) {
-	selectedPlayer := ctx.Params().ByName("player")
-	log.Printf("selected player (%s)", selectedPlayer)
+	chatId := ctx.GetChatId()
+	playerId, err := strconv.Atoi(ctx.Params().ByName("playerId"))
+	if err != nil {
+		return nil, err
+	}
 
-	ctx.Redirect("/watchlist")
+	id := core.PlayerId(playerId)
+	player, err := this.PlayerRepo.GetPlayer(id)
+	if err != nil {
+		return nil, err
+	}
+
+	err = this.WatchlistRepo.Remove(chatId, id)
+	if err != nil {
+		return nil, err
+	}
 
 	ctx.Bot().Request(
 		tgbotapi.NewCallback(
 			ctx.Update().CallbackQuery.ID,
-			fmt.Sprintf("player %s removed from watchlist", selectedPlayer),
+			fmt.Sprintf("player %s removed from the watchlist", player.Name),
 		),
 	)
+
+	ctx.Redirect("/watchlist")
 
 	return this.Index(ctx)
 }
