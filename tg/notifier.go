@@ -52,10 +52,10 @@ func (this *Notifier) handleEvent(events chan core.Player, gotOnline bool) {
 
 		var msg string
 		if gotOnline {
-			msg = fmt.Sprintf("🟢 Player *%s* got online", p.Name)
+			msg = fmt.Sprintf("🟢 Player %s got online", p.Name)
 			log.Printf("notifier: player %s got online", p.Name)
 		} else {
-			msg = fmt.Sprintf("🔴 Player *%s* got offline", p.Name)
+			msg = fmt.Sprintf("🔴 Player %s got offline", p.Name)
 			log.Printf("notifier: player %s got offline", p.Name)
 		}
 
