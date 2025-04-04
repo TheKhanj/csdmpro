@@ -34,13 +34,20 @@ func (this *Observer) observeOnlinePlayers() error {
 
 	for _, player := range players {
 		p, err := this.Repo.GetPlayerByName(player.Name)
-		if err != nil && err != ERR_PLAYER_NOT_FOUND {
+		not_found := err == ERR_PLAYER_NOT_FOUND
+		if err != nil && !not_found {
 			pErr(err)
 			continue
 		}
-		exists := err != ERR_PLAYER_NOT_FOUND
-		if !exists {
+
+		if not_found {
 			err = this.Repo.AddPlayer(player)
+			if err != nil {
+				pErr(err)
+				continue
+			}
+
+			p, err = this.Repo.GetPlayerByName(player.Name)
 			if err != nil {
 				pErr(err)
 				continue
@@ -103,13 +110,13 @@ func (this *Observer) observePlayersPage(page int) error {
 
 	for _, player := range players {
 		_, err := this.Repo.GetPlayerByName(player.Name)
-		if err != nil && err != ERR_PLAYER_NOT_FOUND {
+		not_found := err == ERR_PLAYER_NOT_FOUND
+		if err != nil && !not_found {
 			log.Println(err)
 			continue
 		}
-		exists := err != ERR_PLAYER_NOT_FOUND
 
-		if exists {
+		if !not_found {
 			continue
 		}
 

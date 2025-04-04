@@ -49,7 +49,7 @@ func TestWatchlistRepoSimply(t *testing.T) {
 	}
 
 	var chatId int64 = 1
-	ids, err := repo.Watchlist(chatId)
+	ids, err := repo.List(chatId)
 	if err != nil {
 		t.Fatal(err)
 	}

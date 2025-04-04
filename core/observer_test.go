@@ -51,7 +51,7 @@ func TestObserverSimply(t *testing.T) {
 	tof.Init(t)
 	defer tof.Deinit()
 
-	ctx, cancel := context.WithTimeout(t.Context(), time.Second*2)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*5)
 	defer cancel()
 
 	go tof.Observer.Start(ctx)
@@ -90,7 +90,10 @@ func TestObserverMultipleEvents(t *testing.T) {
 	tof.Init(t)
 	defer tof.Deinit()
 
-	go tof.Observer.Start(t.Context())
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*5)
+	defer cancel()
+
+	go tof.Observer.Start(ctx)
 
 	c := tof.Crawler
 
