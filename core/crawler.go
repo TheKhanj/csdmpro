@@ -3,7 +3,9 @@ package core
 import (
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
@@ -12,8 +14,14 @@ import (
 const CSDMPRO_SITE = "https://www.csdm.pro"
 
 type Player struct {
-	Name    string
-	Country string
+	ID       *int
+	Name     string
+	Country  string
+	Rank     int
+	Score    int
+	Kills    int
+	Deaths   int
+	Accuracy int
 }
 
 type Crawler interface {
@@ -50,15 +58,35 @@ func (this *HttpCrawler) parseBody(body io.ReadCloser) ([]Player, error) {
 	}
 
 	players := make([]Player, 0, 50)
+	getIntCol := func(row *goquery.Selection, col int) (int, error) {
+		str := strings.TrimSpace(row.Children().Eq(2).Text())
+		return strconv.Atoi(str)
+	}
+
 	doc.Find(".stat tbody tr").Each(func(index int, row *goquery.Selection) {
 		cols := row.Children().Eq(1)
 		img := cols.Children().First()
 		imgSrc, _ := img.Attr("src")
 		username := strings.TrimSpace(cols.Text())
 
+		rank, err := getIntCol(row, 0)
+		score, err := getIntCol(row, 2)
+		kills, err := getIntCol(row, 3)
+		deaths, err := getIntCol(row, 4)
+		accuracy, err := getIntCol(row, 6)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
 		player := Player{
-			Name:    username,
-			Country: imgSrc,
+			Name:     username,
+			Country:  imgSrc,
+			Rank:     rank,
+			Score:    score,
+			Kills:    kills,
+			Deaths:   deaths,
+			Accuracy: accuracy,
 		}
 		players = append(players, player)
 	})
