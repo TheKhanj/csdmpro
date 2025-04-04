@@ -37,6 +37,8 @@ func (this *TestingObserverFactory) Init(t *testing.T) {
 		Crawler:        this.Crawler,
 		GotOnline:      make(chan DbPlayer),
 		GotOffline:     make(chan DbPlayer),
+		UpdatedPlayer:  make(chan PlayerId),
+		AddedPlayer:    make(chan PlayerId),
 		StatsInterval:  0,
 		OnlineInterval: 0,
 	}
@@ -82,6 +84,42 @@ func TestObserverSimply(t *testing.T) {
 		if p.Player.Name != player.Name {
 			t.Fatal("player name does not match")
 		}
+	}
+}
+
+func TestObserverStats(t *testing.T) {
+	tof := TestingObserverFactory{}
+	tof.Init(t)
+	defer tof.Deinit()
+
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*5)
+	defer cancel()
+
+	go tof.Observer.Start(ctx)
+
+	c := tof.Crawler
+
+	player := Player{
+		Name:    "thekhanj",
+		Country: "Iran 😭, fuck IRAN, ISLAMIC REPUBLIC to be more accurate. Iran is lovely❤️",
+		Rank:    1,
+	}
+	c.Players = append(c.Players, player)
+
+	select {
+	case <-ctx.Done():
+		t.Fatal("expected new player event to pass in")
+	case id := <-tof.Observer.AddedPlayer:
+		t.Logf("new player with id %d created", id)
+	}
+
+	c.Players[0].Rank = 2
+
+	select {
+	case <-ctx.Done():
+		t.Fatal("expected update player event to pass in")
+	case id := <-tof.Observer.UpdatedPlayer:
+		t.Logf("player with id %d updated", id)
 	}
 }
 

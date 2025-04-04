@@ -15,6 +15,8 @@ type Observer struct {
 	Crawler        Crawler
 	GotOnline      chan DbPlayer
 	GotOffline     chan DbPlayer
+	UpdatedPlayer  chan PlayerId
+	AddedPlayer    chan PlayerId
 	StatsInterval  time.Duration
 	OnlineInterval time.Duration
 
@@ -41,11 +43,12 @@ func (this *Observer) observeOnlinePlayers() error {
 		}
 
 		if not_found {
-			err = this.Repo.AddPlayer(player)
+			id, err := this.Repo.AddPlayer(player)
 			if err != nil {
 				pErr(err)
 				continue
 			}
+			this.AddedPlayer <- id
 
 			p, err = this.Repo.GetPlayerByName(player.Name)
 			if err != nil {
@@ -109,7 +112,7 @@ func (this *Observer) observePlayersPage(page int) error {
 	}
 
 	for _, player := range players {
-		_, err := this.Repo.GetPlayerByName(player.Name)
+		p, err := this.Repo.GetPlayerByName(player.Name)
 		not_found := err == ERR_PLAYER_NOT_FOUND
 		if err != nil && !not_found {
 			log.Println(err)
@@ -117,13 +120,19 @@ func (this *Observer) observePlayersPage(page int) error {
 		}
 
 		if !not_found {
+			err := this.Repo.UpdatePlayer(p.ID, player)
+			if err != nil {
+				log.Println(err)
+			}
+			this.UpdatedPlayer <- p.ID
 			continue
 		}
 
-		err = this.Repo.AddPlayer(player)
+		id, err := this.Repo.AddPlayer(player)
 		if err != nil {
 			log.Println(err)
 		}
+		this.AddedPlayer <- id
 	}
 
 	return nil

@@ -19,7 +19,7 @@ func TestPlayerRepoPlayer(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = repo.AddPlayer(Player{
+	_, err = repo.AddPlayer(Player{
 		Name:    "thekhanj",
 		Country: "iran",
 	})
@@ -49,7 +49,7 @@ func TestPlayerRepoOnline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = repo.AddPlayer(Player{
+	_, err = repo.AddPlayer(Player{
 		Name:    "thekhanj",
 		Country: "iran",
 	})

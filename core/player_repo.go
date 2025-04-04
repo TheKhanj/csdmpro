@@ -19,16 +19,35 @@ type PlayerRepo struct {
 
 var ERR_PLAYER_NOT_FOUND error = errors.New("player not found")
 
-func (this *PlayerRepo) AddPlayer(player Player) error {
+func (this *PlayerRepo) AddPlayer(player Player) (PlayerId, error) {
 	insertSQL := `
 	INSERT INTO players (name, country, rank, score, kills, deaths, accuracy)
 	VALUES (?, ?, ?, ?, ?, ?, ?)`
+
+	row, err := this.Database.Exec(
+		insertSQL,
+		player.Name, player.Country,
+		player.Rank, player.Score, player.Kills,
+		player.Deaths, player.Accuracy,
+	)
+	id, err := row.LastInsertId()
+
+	return PlayerId(id), err
+}
+
+func (this *PlayerRepo) UpdatePlayer(id PlayerId, player Player) error {
+	insertSQL := `
+	UPDATE players
+	SET name = ?, country = ?, rank = ?, score = ?,
+		kills = ?, deaths = ?, accuracy = ?
+	WHERE id = ?`
 
 	_, err := this.Database.Exec(
 		insertSQL,
 		player.Name, player.Country,
 		player.Rank, player.Score, player.Kills,
 		player.Deaths, player.Accuracy,
+		id,
 	)
 	return err
 }

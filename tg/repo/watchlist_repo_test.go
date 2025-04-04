@@ -17,7 +17,7 @@ func addCoupleOfPlayers(db *sql.DB) error {
 	}
 
 	for i := 0; i < 100; i++ {
-		err := repo.AddPlayer(core.Player{
+		_, err := repo.AddPlayer(core.Player{
 			Name:    fmt.Sprintf("player-%d", i),
 			Country: "does not matter",
 		})
