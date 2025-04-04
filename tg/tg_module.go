@@ -81,8 +81,7 @@ func ProvideNotifier(
 	server *Server,
 ) *Notifier {
 	return &Notifier{
-		gotOnline:     observer.GotOnline,
-		gotOffline:    observer.GotOffline,
+		observer:      observer,
 		watchlistRepo: watchlistRepo,
 		playerRepo:    playerRepo,
 		bot:           server.bot,

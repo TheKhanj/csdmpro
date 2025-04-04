@@ -13,6 +13,8 @@ github.com/google/wire v0.6.0 h1:HBkoIh4BdSxoyo9PveV8giw7ZsaBOvzWKfcg/6MrVwI=
 github.com/google/wire v0.6.0/go.mod h1:F4QhpQ9EDIdJ1Mbop/NZBRB+5yrR6qg3BnctaoUk6NA=
 github.com/mattn/go-sqlite3 v1.14.24 h1:tpSp2G2KyMnnQu99ngJ47EIkWVmliIizyZBfPrBWDRM=
 github.com/mattn/go-sqlite3 v1.14.24/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
+github.com/mattn/go-sqlite3 v1.14.27 h1:drZCnuvf37yPfs95E5jd9s3XhdVWLal+6BOK6qrv6IU=
+github.com/mattn/go-sqlite3 v1.14.27/go.mod h1:Uh1q+B4BYcTPb+yiD3kU8Ct7aC0hY9fxUwlHK0RXw+Y=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcUk=
@@ -21,6 +23,8 @@ github.com/thekhanj/drouter v0.0.1 h1:s256CaP0Y40sGMYgXa803Fm9bDleMy4YxVGOqeVrbe
 github.com/thekhanj/drouter v0.0.1/go.mod h1:GMpfDiJrLLaKiJE5q+jzVzWJaLQ0ksuHu84ZcD3Bz4w=
 github.com/thekhanj/tgool v0.0.0-20250402162131-6a64190f46b4 h1:osQWfXmnQW6PqZGn6gaQN+DNUJTDhsOhtuBPx2xAGh8=
 github.com/thekhanj/tgool v0.0.0-20250402162131-6a64190f46b4/go.mod h1:ppZ4jvVYnE/0o2b95ud1I5Q9oeyEmHVTupteB/qzLpg=
+github.com/thekhanj/tgool v0.0.0-20250404164248-8d420e85911b h1:5TfqS8UHfnvUNLMgRv+O2+4madfOmrKqt2s9ObThbKM=
+github.com/thekhanj/tgool v0.0.0-20250404164248-8d420e85911b/go.mod h1:ppZ4jvVYnE/0o2b95ud1I5Q9oeyEmHVTupteB/qzLpg=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=

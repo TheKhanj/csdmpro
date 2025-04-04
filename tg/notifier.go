@@ -1,6 +1,7 @@
 package tg
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"sync"
@@ -11,29 +12,52 @@ import (
 )
 
 type Notifier struct {
-	gotOnline     chan core.DbPlayer
-	gotOffline    chan core.DbPlayer
+	observer      *core.Observer
 	watchlistRepo *repo.WatchlistRepo
 	playerRepo    *core.PlayerRepo
 	bot           *tgbotapi.BotAPI
+	wg            sync.WaitGroup
 }
 
-func (this *Notifier) Start() {
-	var wg sync.WaitGroup
-	wg.Add(2)
+func (this *Notifier) Start(ctx context.Context) {
+	log.Println("notifier: started")
+	defer log.Println("notifier: stopped")
 
+	this.wg.Add(4)
+
+	throwAway := func(ch chan core.PlayerId, template string) {
+		defer this.wg.Done()
+
+		for id := range ch {
+			log.Printf(template, id)
+		}
+	}
+
+	go throwAway(
+		this.observer.AddedPlayer,
+		"notifier: new player added (id: %d)",
+	)
+	go throwAway(
+		this.observer.UpdatedPlayer,
+		"notifier: player updated (id: %d)",
+	)
 	go func() {
-		defer wg.Done()
+		defer this.wg.Done()
 
-		this.handleEvent(this.gotOnline, true)
+		this.handleEvent(this.observer.GotOnline, true)
+	}()
+	go func() {
+		defer this.wg.Done()
+		go this.handleEvent(this.observer.GotOffline, false)
 	}()
 
-	go func() {
-		defer wg.Done()
-		go this.handleEvent(this.gotOffline, false)
-	}()
+	<-ctx.Done()
+	this.stop()
+}
 
-	wg.Wait()
+func (this *Notifier) stop() {
+	log.Println("notifier: stopping...")
+	this.wg.Wait()
 }
 
 func (this *Notifier) handleEvent(events chan core.DbPlayer, gotOnline bool) {

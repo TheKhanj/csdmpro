@@ -20,8 +20,7 @@ type Observer struct {
 	StatsInterval  time.Duration
 	OnlineInterval time.Duration
 
-	shuttingDown bool
-	wg           sync.WaitGroup
+	wg sync.WaitGroup
 }
 
 func (this *Observer) observeOnlinePlayers() error {
@@ -139,7 +138,7 @@ func (this *Observer) observePlayersPage(page int) error {
 }
 
 func (this *Observer) observePlayers() {
-	for page := 1; page <= 5; page++ {
+	for page := 1; page <= 20; page++ {
 		err := this.observePlayersPage(page)
 		if err != nil {
 			log.Println(err)
@@ -148,41 +147,43 @@ func (this *Observer) observePlayers() {
 }
 
 func (this *Observer) Start(ctx context.Context) {
+	log.Println("observer: started")
+	defer log.Println("observer: stopped")
+
 	this.wg.Add(2)
 
 	go func() {
+		log.Println("observer: started observing onlines")
 		defer this.wg.Done()
+		defer log.Println("observer: stopped observing onlines")
 
 		for {
-			if this.shuttingDown {
-				return
-			}
-
 			err := this.observeOnlinePlayers()
 			if err != nil {
 				log.Println(err)
 			}
-			if this.shuttingDown {
-				return
-			}
 
-			time.Sleep(this.OnlineInterval)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(this.OnlineInterval):
+			}
 		}
 	}()
 
 	go func() {
+		log.Println("observer: started observing stats")
 		defer this.wg.Done()
+		defer log.Println("observer: stopped observing stats")
 
 		for {
-			if this.shuttingDown {
-				return
-			}
 			this.observePlayers()
-			if this.shuttingDown {
-				return
-			}
 
-			time.Sleep(this.StatsInterval)
+			select {
+			case <-ctx.Done():
+				return
+			case <-time.After(this.StatsInterval):
+			}
 		}
 	}()
 
@@ -191,7 +192,11 @@ func (this *Observer) Start(ctx context.Context) {
 }
 
 func (this *Observer) stop() {
-	this.shuttingDown = true
+	log.Println("observer: stopping...")
 
 	this.wg.Wait()
+	close(this.GotOnline)
+	close(this.GotOffline)
+	close(this.UpdatedPlayer)
+	close(this.AddedPlayer)
 }

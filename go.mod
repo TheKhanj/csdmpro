@@ -6,8 +6,8 @@ require (
 	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/google/wire v0.6.0
-	github.com/mattn/go-sqlite3 v1.14.24
-	github.com/thekhanj/tgool v0.0.0-20250402162131-6a64190f46b4
+	github.com/mattn/go-sqlite3 v1.14.27
+	github.com/thekhanj/tgool v0.0.0-20250404164248-8d420e85911b
 	golang.org/x/net v0.38.0
 )
 
