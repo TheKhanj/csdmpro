@@ -5,22 +5,27 @@ import (
 	"fmt"
 	"testing"
 	"time"
+
+	"github.com/thekhanj/csdmpro/db"
 )
 
 type TestingObserverFactory struct {
 	Crawler  *StubCrawler
 	Observer *Observer
 
-	trf TestingRepoFactory
+	dbF db.FakeDbFactory
 }
 
 func (this *TestingObserverFactory) Init(t *testing.T) {
-	err := this.trf.Init()
+	db, err := this.dbF.Init()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	repo := this.trf.Repo
+	repo, err := CreatePlayerRepo(db)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	this.Crawler = &StubCrawler{
 		Onlines: make([]Player, 0),
@@ -39,7 +44,7 @@ func (this *TestingObserverFactory) Init(t *testing.T) {
 }
 
 func (this *TestingObserverFactory) Deinit() {
-	defer this.trf.Deinit()
+	this.dbF.Deinit()
 }
 
 func TestObserverSimply(t *testing.T) {
@@ -63,10 +68,10 @@ func TestObserverSimply(t *testing.T) {
 
 	select {
 	case <-ctx.Done():
-		t.Error("expected online player event to pass in")
+		t.Fatal("expected online player event to pass in")
 	case p := <-tof.Observer.GotOnline:
 		if p.Name != player.Name {
-			t.Error("player name does not match")
+			t.Fatal("player name does not match")
 		}
 	}
 
@@ -74,10 +79,10 @@ func TestObserverSimply(t *testing.T) {
 
 	select {
 	case <-ctx.Done():
-		t.Error("expected offline player event to pass in")
+		t.Fatal("expected offline player event to pass in")
 	case p := <-tof.Observer.GotOffline:
 		if p.Name != player.Name {
-			t.Error("player name does not match")
+			t.Fatal("player name does not match")
 		}
 	}
 }
@@ -108,7 +113,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 
 		event := <-tof.Observer.GotOnline
 		if event.Name != p.Name {
-			t.Errorf("unexpected player name")
+			t.Fatalf("unexpected player name")
 		}
 	}
 
@@ -119,7 +124,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 
 		event := <-tof.Observer.GotOffline
 		if event.Name != p.Name {
-			t.Errorf("unexpected player name")
+			t.Fatalf("unexpected player name")
 		}
 	}
 
@@ -131,7 +136,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 
 		event := <-tof.Observer.GotOnline
 		if event.Name != p.Name {
-			t.Errorf("unexpected player name")
+			t.Fatalf("unexpected player name")
 		}
 	}
 
@@ -144,7 +149,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 
 		event := <-tof.Observer.GotOnline
 		if event.Name != p.Name {
-			t.Errorf("unexpected player name")
+			t.Fatalf("unexpected player name")
 		}
 	}
 }
