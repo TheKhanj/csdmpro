@@ -31,6 +31,7 @@ func (this *PlayerRepo) PlayerExists(name string) (bool, error) {
 		SELECT name
 		FROM players
 		WHERE name = ?
+		ORDER BY rank ASC
 		LIMIT 1
 	`, name)
 	if err != nil {
@@ -65,10 +66,12 @@ func (this *PlayerRepo) Onlines() ([]Player, error) {
 	rows, err := this.Database.Query(
 		fmt.Sprintf(
 			`SELECT %s
-		FROM players_online as online
-		INNER JOIN players as player on player.id = online.player_id
-		ORDER BY rank
-	`, this.getPlayerFields("player.")))
+				FROM players_online as online
+				INNER JOIN players as player on player.id = online.player_id
+				ORDER BY player.rank ASC
+			`,
+			this.getPlayerFields("player."),
+		))
 	if err != nil {
 		return nil, err
 	}
@@ -122,6 +125,7 @@ func (this *PlayerRepo) GetPlayerId(name string) (PlayerId, error) {
 		SELECT id
 		FROM players
 		WHERE name = ?
+		ORDER BY rank ASC
 		LIMIT 1
 	`, name)
 	if err != nil {
@@ -174,7 +178,7 @@ func (this *PlayerRepo) List(offset int, limit int) ([]Player, error) {
 	rows, err := this.Database.Query(fmt.Sprintf(`
 		SELECT %s
 		FROM players as p
-		ORDER BY p.id
+		ORDER BY p.rank ASC
 		LIMIT ? OFFSET ?
 	`, this.getPlayerFields("p.")), limit, offset)
 	if err != nil {
@@ -212,18 +216,30 @@ func CreatePlayerRepo(db *sql.DB) (*PlayerRepo, error) {
 		return nil, err
 	}
 
-	createPlayersRankIndex := `CREATE INDEX IF NOT EXISTS idx_rank ON players(rank)`
+	createPlayersRankIndex := `
+		CREATE INDEX IF NOT EXISTS idx_rank ON
+		players(rank)`
 
 	_, err = db.Exec(createPlayersRankIndex)
 	if err != nil {
 		return nil, err
 	}
 
-	createPlayersOnlineTable := `CREATE TABLE IF NOT EXISTS players_online (
-		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		player_id INTEGER UNIQUE,
-		FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE RESTRICT
-	);`
+	createPlayersNameRankIndex := `
+		CREATE INDEX IF NOT EXISTS idx_name_rank
+		ON players(name, rank)`
+
+	_, err = db.Exec(createPlayersNameRankIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	createPlayersOnlineTable := `
+		CREATE TABLE IF NOT EXISTS players_online (
+			id INTEGER PRIMARY KEY AUTOINCREMENT,
+			player_id INTEGER UNIQUE,
+			FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE RESTRICT
+		);`
 	_, err = db.Exec(createPlayersOnlineTable)
 	if err != nil {
 		return nil, err
