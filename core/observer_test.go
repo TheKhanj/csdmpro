@@ -39,7 +39,6 @@ func (this *TestingObserverFactory) Init(t *testing.T) {
 		GotOffline:     make(chan DbPlayer),
 		StatsInterval:  0,
 		OnlineInterval: 0,
-		Ctx:            t.Context(),
 	}
 }
 
@@ -52,11 +51,10 @@ func TestObserverSimply(t *testing.T) {
 	tof.Init(t)
 	defer tof.Deinit()
 
-	go tof.Observer.Start()
-	defer tof.Observer.Stop()
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*2)
 	defer cancel()
+
+	go tof.Observer.Start(ctx)
 
 	c := tof.Crawler
 
@@ -92,8 +90,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 	tof.Init(t)
 	defer tof.Deinit()
 
-	go tof.Observer.Start()
-	defer tof.Observer.Stop()
+	go tof.Observer.Start(t.Context())
 
 	c := tof.Crawler
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"sync"
 )
@@ -21,7 +22,7 @@ func main() {
 		defer wg.Done()
 
 		log.Println("observing stats...")
-		app.CoreObserver.Start()
+		app.CoreObserver.Start(context.Background())
 	}()
 
 	go func() {

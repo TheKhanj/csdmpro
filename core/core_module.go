@@ -1,7 +1,6 @@
 package core
 
 import (
-	"context"
 	"log"
 	"time"
 
@@ -26,7 +25,6 @@ func ProvideObserver(repo *PlayerRepo) *Observer {
 		GotOffline:     make(chan DbPlayer, 0),
 		StatsInterval:  time.Minute * 20,
 		OnlineInterval: time.Minute,
-		Ctx:            context.Background(),
 	}
 }
 

@@ -17,7 +17,6 @@ type Observer struct {
 	GotOffline     chan DbPlayer
 	StatsInterval  time.Duration
 	OnlineInterval time.Duration
-	Ctx            context.Context
 
 	shuttingDown bool
 	wg           sync.WaitGroup
@@ -132,7 +131,7 @@ func (this *Observer) observePlayers() {
 	}
 }
 
-func (this *Observer) Start() {
+func (this *Observer) Start(ctx context.Context) {
 	this.wg.Add(2)
 
 	go func() {
@@ -147,10 +146,11 @@ func (this *Observer) Start() {
 			if err != nil {
 				log.Println(err)
 			}
+			if this.shuttingDown {
+				return
+			}
 
-			ctx, cancel := context.WithTimeout(this.Ctx, this.OnlineInterval)
-			defer cancel()
-			<-ctx.Done()
+			time.Sleep(this.OnlineInterval)
 		}
 	}()
 
@@ -161,19 +161,20 @@ func (this *Observer) Start() {
 			if this.shuttingDown {
 				return
 			}
-
 			this.observePlayers()
+			if this.shuttingDown {
+				return
+			}
 
-			ctx, cancel := context.WithTimeout(this.Ctx, this.StatsInterval)
-			defer cancel()
-			<-ctx.Done()
+			time.Sleep(this.StatsInterval)
 		}
 	}()
 
-	this.wg.Wait()
+	<-ctx.Done()
+	this.stop()
 }
 
-func (this *Observer) Stop() {
+func (this *Observer) stop() {
 	this.shuttingDown = true
 
 	this.wg.Wait()
