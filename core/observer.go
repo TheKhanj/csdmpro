@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"sync"
 	"time"
 
@@ -138,7 +139,12 @@ func (this *Observer) observePlayersPage(page int) error {
 }
 
 func (this *Observer) observePlayers() {
-	for page := 1; page <= 20; page++ {
+	pageCount := 20
+	if os.Getenv("ENV") == "dev" {
+		pageCount = 1
+	}
+
+	for page := 1; page <= pageCount; page++ {
 		err := this.observePlayersPage(page)
 		if err != nil {
 			log.Println(err)

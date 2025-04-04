@@ -1,10 +1,12 @@
 package core
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -58,7 +60,8 @@ func (this *HttpCrawler) parseBody(body io.ReadCloser) ([]Player, error) {
 
 	players := make([]Player, 0, 50)
 	getIntCol := func(row *goquery.Selection, col int) (int, error) {
-		str := strings.TrimSpace(row.Children().Eq(2).Text())
+		str := strings.TrimSpace(row.Children().Eq(col).Text())
+
 		return strconv.Atoi(str)
 	}
 
@@ -72,7 +75,15 @@ func (this *HttpCrawler) parseBody(body io.ReadCloser) ([]Player, error) {
 		score, err := getIntCol(row, 2)
 		kills, err := getIntCol(row, 3)
 		deaths, err := getIntCol(row, 4)
-		accuracy, err := getIntCol(row, 6)
+		accuracyStr := strings.TrimSpace(row.Children().Eq(6).Text())
+		re := regexp.MustCompile("([0-9]*)")
+		accuracyStrCleanedMatches := re.FindStringSubmatch(accuracyStr)
+		if len(accuracyStrCleanedMatches) == 0 {
+			log.Println(errors.New("accuracy regex not matched!"))
+			return
+		}
+		accuracyStrCleaned := accuracyStrCleanedMatches[0]
+		accuracy, err := strconv.Atoi(accuracyStrCleaned)
 		if err != nil {
 			log.Println(err)
 			return

@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"log"
 )
 
 type PlayerId int
@@ -21,7 +20,6 @@ type PlayerRepo struct {
 var ERR_PLAYER_NOT_FOUND error = errors.New("player not found")
 
 func (this *PlayerRepo) AddPlayer(player Player) (PlayerId, error) {
-	log.Printf("repo: adding new player (%s)", player.Name)
 	insertSQL := `
 	INSERT INTO players (name, country, rank, score, kills, deaths, accuracy)
 	VALUES (?, ?, ?, ?, ?, ?, ?)`
