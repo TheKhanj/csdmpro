@@ -13,8 +13,8 @@ import (
 type Observer struct {
 	Repo           *PlayerRepo
 	Crawler        Crawler
-	GotOnline      chan Player
-	GotOffline     chan Player
+	GotOnline      chan DbPlayer
+	GotOffline     chan DbPlayer
 	StatsInterval  time.Duration
 	OnlineInterval time.Duration
 	Ctx            context.Context
@@ -34,11 +34,12 @@ func (this *Observer) observeOnlinePlayers() error {
 	}
 
 	for _, player := range players {
-		exists, err := this.Repo.PlayerExists(player.Name)
-		if err != nil {
+		p, err := this.Repo.GetPlayerByName(player.Name)
+		if err != nil && err != ERR_PLAYER_NOT_FOUND {
 			pErr(err)
 			continue
 		}
+		exists := err != ERR_PLAYER_NOT_FOUND
 		if !exists {
 			err = this.Repo.AddPlayer(player)
 			if err != nil {
@@ -56,19 +57,13 @@ func (this *Observer) observeOnlinePlayers() error {
 			continue
 		}
 
-		playerId, err := this.Repo.GetPlayerId(player.Name)
+		err = this.Repo.AddOnlinePlayer(PlayerId(p.ID))
 		if err != nil {
 			pErr(err)
 			continue
 		}
 
-		err = this.Repo.AddOnlinePlayer(playerId)
-		if err != nil {
-			pErr(err)
-			continue
-		}
-
-		this.GotOnline <- player
+		this.GotOnline <- p
 	}
 
 	prevOnlines, err := this.Repo.Onlines()
@@ -79,7 +74,7 @@ func (this *Observer) observeOnlinePlayers() error {
 	for _, prevOnline := range prevOnlines {
 		isStillOnline := false
 		for _, player := range players {
-			if prevOnline.Name == player.Name {
+			if prevOnline.Player.Name == player.Name {
 				isStillOnline = true
 				break
 			}
@@ -89,12 +84,7 @@ func (this *Observer) observeOnlinePlayers() error {
 			continue
 		}
 
-		playerId, err := this.Repo.GetPlayerId(prevOnline.Name)
-		if err != nil {
-			pErr(err)
-			continue
-		}
-		err = this.Repo.RemoveOnlinePlayer(playerId)
+		err = this.Repo.RemoveOnlinePlayer(prevOnline.ID)
 		if err != nil {
 			pErr(err)
 			continue
@@ -113,11 +103,12 @@ func (this *Observer) observePlayersPage(page int) error {
 	}
 
 	for _, player := range players {
-		exists, err := this.Repo.PlayerExists(player.Name)
-		if err != nil {
+		_, err := this.Repo.GetPlayerByName(player.Name)
+		if err != nil && err != ERR_PLAYER_NOT_FOUND {
 			log.Println(err)
 			continue
 		}
+		exists := err != ERR_PLAYER_NOT_FOUND
 
 		if exists {
 			continue

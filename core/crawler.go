@@ -14,7 +14,6 @@ import (
 const CSDMPRO_SITE = "https://www.csdm.pro"
 
 type Player struct {
-	ID       *int
 	Name     string
 	Country  string
 	Rank     int

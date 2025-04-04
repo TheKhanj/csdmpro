@@ -11,8 +11,8 @@ import (
 )
 
 type Notifier struct {
-	gotOnline     chan core.Player
-	gotOffline    chan core.Player
+	gotOnline     chan core.DbPlayer
+	gotOffline    chan core.DbPlayer
 	watchlistRepo *repo.WatchlistRepo
 	playerRepo    *core.PlayerRepo
 	bot           *tgbotapi.BotAPI
@@ -36,15 +36,15 @@ func (this *Notifier) Start() {
 	wg.Wait()
 }
 
-func (this *Notifier) handleEvent(events chan core.Player, gotOnline bool) {
+func (this *Notifier) handleEvent(events chan core.DbPlayer, gotOnline bool) {
 	for p := range events {
-		playerId, err := this.playerRepo.GetPlayerId(p.Name)
+		player, err := this.playerRepo.GetPlayerByName(p.Player.Name)
 		if err != nil {
 			log.Printf("notifier: %s", err.Error())
 			continue
 		}
 
-		chatIds, err := this.watchlistRepo.GetInterested(playerId)
+		chatIds, err := this.watchlistRepo.GetInterested(player.ID)
 		if err != nil {
 			log.Printf("notifier: %s", err.Error())
 			continue
@@ -52,11 +52,11 @@ func (this *Notifier) handleEvent(events chan core.Player, gotOnline bool) {
 
 		var msg string
 		if gotOnline {
-			msg = fmt.Sprintf("🟢 Player %s got online", p.Name)
-			log.Printf("notifier: player %s got online", p.Name)
+			msg = fmt.Sprintf("🟢 Player %s got online", p.Player.Name)
+			log.Printf("notifier: player %s got online", p.Player.Name)
 		} else {
-			msg = fmt.Sprintf("🔴 Player %s got offline", p.Name)
-			log.Printf("notifier: player %s got offline", p.Name)
+			msg = fmt.Sprintf("🔴 Player %s got offline", p.Player.Name)
+			log.Printf("notifier: player %s got offline", p.Player.Name)
 		}
 
 		for _, chatId := range chatIds {

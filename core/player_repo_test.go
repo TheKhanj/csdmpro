@@ -10,7 +10,7 @@ func TestPlayerRepoPlayer(t *testing.T) {
 	f := db.FakeDbFactory{}
 	db, err := f.Init()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer f.Deinit()
 
@@ -24,20 +24,15 @@ func TestPlayerRepoPlayer(t *testing.T) {
 		Country: "iran",
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	_, err = repo.GetPlayerId("thekhanj")
-	if err != nil {
-		t.Error(err)
+	_, err = repo.GetPlayerByName("thekhanj")
+	if err == ERR_PLAYER_NOT_FOUND {
+		t.Fatal("player thekhanj must exist in database")
 	}
-
-	exists, err := repo.PlayerExists("thekhanj")
 	if err != nil {
-		t.Error(err)
-	}
-	if exists == false {
-		t.Error("player thekhanj must exist in database")
+		t.Fatal(err)
 	}
 }
 
@@ -45,7 +40,7 @@ func TestPlayerRepoOnline(t *testing.T) {
 	f := db.FakeDbFactory{}
 	db, err := f.Init()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	defer f.Deinit()
 
@@ -59,53 +54,53 @@ func TestPlayerRepoOnline(t *testing.T) {
 		Country: "iran",
 	})
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	isOnline, err := repo.IsOnline("thekhanj")
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if isOnline {
-		t.Error("player should not be online before adding to database")
+		t.Fatal("player should not be online before adding to database")
 	}
 
-	id, err := repo.GetPlayerId("thekhanj")
+	p, err := repo.GetPlayerByName("thekhanj")
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
-	err = repo.AddOnlinePlayer(id)
+	err = repo.AddOnlinePlayer(p.ID)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	isOnline, err = repo.IsOnline("thekhanj")
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if !isOnline {
-		t.Error("player should be online after adding to database")
+		t.Fatal("player should be online after adding to database")
 	}
 
 	onlines, err := repo.Onlines()
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if len(onlines) != 1 {
-		t.Error("number of online players must be 1")
+		t.Fatal("number of online players must be 1")
 	}
 
-	err = repo.RemoveOnlinePlayer(id)
+	err = repo.RemoveOnlinePlayer(p.ID)
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 
 	isOnline, err = repo.IsOnline("thekhanj")
 	if err != nil {
-		t.Error(err)
+		t.Fatal(err)
 	}
 	if isOnline {
-		t.Error("player should not be online after removing it from database")
+		t.Fatal("player should not be online after removing it from database")
 	}
 }

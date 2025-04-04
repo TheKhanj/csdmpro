@@ -55,7 +55,7 @@ Just add them to your watchlist, and I'll handle the rest. 🚀`
 			} else {
 				status = "🔴"
 			}
-			txt += fmt.Sprintf("%s %s\n", status, tp.Player.Name)
+			txt += fmt.Sprintf("%s %s\n", status, tp.DbPlayer.Player.Name)
 		}
 	}
 
@@ -109,26 +109,16 @@ Select a player to add to your watchlist`
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 
 	getTwoPlayerKeyboard := func(
-		p1 *core.Player, p2 *core.Player,
+		p1 *core.DbPlayer, p2 *core.DbPlayer,
 	) ([]tgbotapi.InlineKeyboardButton, error) {
-		// TODO: what is this shit? fix it
-		p1Id, err := this.PlayerRepo.GetPlayerId(p1.Name)
-		if err != nil {
-			return nil, err
-		}
-		p2Id, err := this.PlayerRepo.GetPlayerId(p2.Name)
-		if err != nil {
-			return nil, err
-		}
-
 		row := tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("✔️ %s", p1.Name),
-				fmt.Sprintf("/watchlist/a/post/players/%d", p1Id),
+				fmt.Sprintf("✔️ %s", p1.Player.Name),
+				fmt.Sprintf("/watchlist/a/post/players/%d", p1.ID),
 			),
 			tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("✔️ %s", p2.Name),
-				fmt.Sprintf("/watchlist/a/post/players/%d", p2Id),
+				fmt.Sprintf("✔️ %s", p2.Player.Name),
+				fmt.Sprintf("/watchlist/a/post/players/%d", p2.ID),
 			),
 		)
 
@@ -205,7 +195,7 @@ func (this *WatchlistController) AddPlayer(
 		ctx.Bot().Request(
 			tgbotapi.NewCallback(
 				ctx.Update().CallbackQuery.ID,
-				fmt.Sprintf("player %s is already in the watchlist", player.Name),
+				fmt.Sprintf("player %s is already in the watchlist", player.Player.Name),
 			),
 		)
 	} else {
@@ -217,7 +207,7 @@ func (this *WatchlistController) AddPlayer(
 		ctx.Bot().Request(
 			tgbotapi.NewCallback(
 				ctx.Update().CallbackQuery.ID,
-				fmt.Sprintf("player %s added into the watchlist", player.Name),
+				fmt.Sprintf("player %s added into the watchlist", player.Player.Name),
 			),
 		)
 	}
@@ -249,8 +239,8 @@ Select a player to remove from your watchlist`
 		rows = append(rows,
 			tgbotapi.NewInlineKeyboardRow(
 				tgbotapi.NewInlineKeyboardButtonData(
-					fmt.Sprintf("🚫 %s", tp.Player.Name),
-					fmt.Sprintf("/watchlist/a/delete/players/%d", tp.Id),
+					fmt.Sprintf("🚫 %s", tp.DbPlayer.Player.Name),
+					fmt.Sprintf("/watchlist/a/delete/players/%d", tp.DbPlayer.ID),
 				),
 			),
 		)
@@ -293,7 +283,7 @@ func (this *WatchlistController) RemovePlayer(
 	ctx.Bot().Request(
 		tgbotapi.NewCallback(
 			ctx.Update().CallbackQuery.ID,
-			fmt.Sprintf("player %s removed from the watchlist", player.Name),
+			fmt.Sprintf("player %s removed from the watchlist", player.Player.Name),
 		),
 	)
 

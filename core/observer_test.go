@@ -35,8 +35,8 @@ func (this *TestingObserverFactory) Init(t *testing.T) {
 	this.Observer = &Observer{
 		Repo:           repo,
 		Crawler:        this.Crawler,
-		GotOnline:      make(chan Player),
-		GotOffline:     make(chan Player),
+		GotOnline:      make(chan DbPlayer),
+		GotOffline:     make(chan DbPlayer),
 		StatsInterval:  0,
 		OnlineInterval: 0,
 		Ctx:            t.Context(),
@@ -70,7 +70,7 @@ func TestObserverSimply(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatal("expected online player event to pass in")
 	case p := <-tof.Observer.GotOnline:
-		if p.Name != player.Name {
+		if p.Player.Name != player.Name {
 			t.Fatal("player name does not match")
 		}
 	}
@@ -81,7 +81,7 @@ func TestObserverSimply(t *testing.T) {
 	case <-ctx.Done():
 		t.Fatal("expected offline player event to pass in")
 	case p := <-tof.Observer.GotOffline:
-		if p.Name != player.Name {
+		if p.Player.Name != player.Name {
 			t.Fatal("player name does not match")
 		}
 	}
@@ -112,7 +112,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 		c.Onlines = append(c.Onlines, p)
 
 		event := <-tof.Observer.GotOnline
-		if event.Name != p.Name {
+		if event.Player.Name != p.Name {
 			t.Fatalf("unexpected player name")
 		}
 	}
@@ -123,7 +123,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 		c.Onlines = c.Onlines[0 : len(c.Onlines)-1]
 
 		event := <-tof.Observer.GotOffline
-		if event.Name != p.Name {
+		if event.Player.Name != p.Name {
 			t.Fatalf("unexpected player name")
 		}
 	}
@@ -135,7 +135,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 		c.Onlines = append(c.Onlines, p)
 
 		event := <-tof.Observer.GotOnline
-		if event.Name != p.Name {
+		if event.Player.Name != p.Name {
 			t.Fatalf("unexpected player name")
 		}
 	}
@@ -148,7 +148,7 @@ func TestObserverMultipleEvents(t *testing.T) {
 		c.Onlines = append(c.Onlines, p)
 
 		event := <-tof.Observer.GotOnline
-		if event.Name != p.Name {
+		if event.Player.Name != p.Name {
 			t.Fatalf("unexpected player name")
 		}
 	}

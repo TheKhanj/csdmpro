@@ -22,8 +22,8 @@ func ProvideObserver(repo *PlayerRepo) *Observer {
 	return &Observer{
 		Repo:           repo,
 		Crawler:        &HttpCrawler{},
-		GotOnline:      make(chan Player, 0),
-		GotOffline:     make(chan Player, 0),
+		GotOnline:      make(chan DbPlayer, 0),
+		GotOffline:     make(chan DbPlayer, 0),
 		StatsInterval:  time.Minute * 20,
 		OnlineInterval: time.Minute,
 		Ctx:            context.Background(),

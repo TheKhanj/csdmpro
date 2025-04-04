@@ -23,13 +23,12 @@ func (this *WatchlistService) GetTracking(chatId int64) ([]TrackingPlayer, error
 		}
 
 		// TODO: fix this
-		isOnline, err := this.PlayerRepo.IsOnline(p.Name)
+		isOnline, err := this.PlayerRepo.IsOnline(p.Player.Name)
 		if err != nil {
 			return nil, err
 		}
 		ret = append(ret, TrackingPlayer{
-			Player:   p,
-			Id:       id,
+			DbPlayer:   p,
 			IsOnline: isOnline,
 		})
 	}
@@ -38,7 +37,6 @@ func (this *WatchlistService) GetTracking(chatId int64) ([]TrackingPlayer, error
 }
 
 type TrackingPlayer struct {
-	Player   core.Player
-	Id       core.PlayerId
+	DbPlayer   core.DbPlayer
 	IsOnline bool
 }

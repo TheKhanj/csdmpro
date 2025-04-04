@@ -8,9 +8,16 @@ import (
 
 type PlayerId int
 
+type DbPlayer struct {
+	ID     PlayerId
+	Player Player
+}
+
 type PlayerRepo struct {
 	Database *sql.DB
 }
+
+var ERR_PLAYER_NOT_FOUND error = errors.New("player not found")
 
 func (this *PlayerRepo) AddPlayer(player Player) error {
 	insertSQL := `
@@ -26,27 +33,6 @@ func (this *PlayerRepo) AddPlayer(player Player) error {
 	return err
 }
 
-func (this *PlayerRepo) PlayerExists(name string) (bool, error) {
-	rows, err := this.Database.Query(`
-		SELECT name
-		FROM players
-		WHERE name = ?
-		ORDER BY rank ASC
-		LIMIT 1
-	`, name)
-	if err != nil {
-		return false, err
-	}
-	defer rows.Close()
-
-	cnt := 0
-	for rows.Next() {
-		cnt++
-	}
-
-	return cnt == 1, nil
-}
-
 func (this *PlayerRepo) IsOnline(name string) (bool, error) {
 	onlines, err := this.Onlines()
 	if err != nil {
@@ -54,7 +40,7 @@ func (this *PlayerRepo) IsOnline(name string) (bool, error) {
 	}
 
 	for _, online := range onlines {
-		if online.Name == name {
+		if online.Player.Name == name {
 			return true, nil
 		}
 	}
@@ -62,7 +48,7 @@ func (this *PlayerRepo) IsOnline(name string) (bool, error) {
 	return false, nil
 }
 
-func (this *PlayerRepo) Onlines() ([]Player, error) {
+func (this *PlayerRepo) Onlines() ([]DbPlayer, error) {
 	rows, err := this.Database.Query(
 		fmt.Sprintf(
 			`SELECT %s
@@ -77,7 +63,7 @@ func (this *PlayerRepo) Onlines() ([]Player, error) {
 	}
 	defer rows.Close()
 
-	players := make([]Player, 0, 0)
+	players := make([]DbPlayer, 0, 0)
 
 	for rows.Next() {
 		p, err := this.scanPlayer(rows)
@@ -91,17 +77,17 @@ func (this *PlayerRepo) Onlines() ([]Player, error) {
 	return players, nil
 }
 
-func (this *PlayerRepo) scanPlayer(rows *sql.Rows) (Player, error) {
-	var p Player
-	var id int
-	p.ID = &id
+func (this *PlayerRepo) scanPlayer(rows *sql.Rows) (DbPlayer, error) {
+	var p DbPlayer
+	var id PlayerId
 
 	err := rows.Scan(
 		&id,
-		&p.Name, &p.Country,
-		&p.Rank, &p.Score, &p.Kills,
-		&p.Deaths, &p.Accuracy,
+		&p.Player.Name, &p.Player.Country,
+		&p.Player.Rank, &p.Player.Score, &p.Player.Kills,
+		&p.Player.Deaths, &p.Player.Accuracy,
 	)
+	p.ID = id
 
 	return p, err
 }
@@ -119,31 +105,27 @@ func (this *PlayerRepo) getPlayerFields(prefix string) string {
 	return ret
 }
 
-// Deprecated: don't use this
-func (this *PlayerRepo) GetPlayerId(name string) (PlayerId, error) {
-	rows, err := this.Database.Query(`
-		SELECT id
-		FROM players
+func (this *PlayerRepo) GetPlayerByName(name string) (DbPlayer, error) {
+	rows, err := this.Database.Query(fmt.Sprintf(`
+		SELECT %s
+		FROM players as p
 		WHERE name = ?
-		ORDER BY rank ASC
+		ORDER BY p.rank ASC
 		LIMIT 1
-	`, name)
+	`, this.getPlayerFields("p.")), name)
 	if err != nil {
-		return 0, err
+		return DbPlayer{}, err
 	}
 	defer rows.Close()
 
-	rows.Next()
-
-	var id PlayerId
-	err = rows.Scan(&id)
-	if err != nil {
-		return 0, err
+	if !rows.Next() {
+		return DbPlayer{}, ERR_PLAYER_NOT_FOUND
 	}
-	return id, nil
+
+	return this.scanPlayer(rows)
 }
 
-func (this *PlayerRepo) GetPlayer(id PlayerId) (Player, error) {
+func (this *PlayerRepo) GetPlayer(id PlayerId) (DbPlayer, error) {
 	rows, err := this.Database.Query(fmt.Sprintf(`
 		SELECT %s
 		FROM players as p
@@ -151,12 +133,12 @@ func (this *PlayerRepo) GetPlayer(id PlayerId) (Player, error) {
 		LIMIT 1
 	`, this.getPlayerFields("p.")), id)
 	if err != nil {
-		return Player{}, err
+		return DbPlayer{}, err
 	}
 	defer rows.Close()
 
 	if !rows.Next() {
-		return Player{}, errors.New("player not found")
+		return DbPlayer{}, ERR_PLAYER_NOT_FOUND
 	}
 
 	return this.scanPlayer(rows)
@@ -174,7 +156,7 @@ func (this *PlayerRepo) RemoveOnlinePlayer(playerId PlayerId) error {
 	return err
 }
 
-func (this *PlayerRepo) List(offset int, limit int) ([]Player, error) {
+func (this *PlayerRepo) List(offset int, limit int) ([]DbPlayer, error) {
 	rows, err := this.Database.Query(fmt.Sprintf(`
 		SELECT %s
 		FROM players as p
@@ -186,7 +168,7 @@ func (this *PlayerRepo) List(offset int, limit int) ([]Player, error) {
 	}
 	defer rows.Close()
 
-	players := make([]Player, 0, 0)
+	players := make([]DbPlayer, 0, 0)
 
 	for rows.Next() {
 		p, err := this.scanPlayer(rows)
