@@ -29,19 +29,16 @@ func (this *App) Start(ctx context.Context) {
 
 		this.TgServer.Listen(ctx)
 	}()
-
 	go func() {
 		defer wg.Done()
 
 		this.CoreObserver.Start(ctx)
 	}()
-
 	go func() {
 		defer wg.Done()
 
 		this.Notifier.Start(ctx)
 	}()
-
 	wg.Wait()
 }
 

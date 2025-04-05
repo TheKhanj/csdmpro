@@ -19,6 +19,7 @@ func main() {
 
 	go func() {
 		defer wg.Done()
+
 		app.Start(ctx)
 	}()
 
@@ -31,5 +32,6 @@ func main() {
 
 	log.Println("app: stopping...")
 	cancel()
+
 	wg.Wait()
 }
