@@ -83,9 +83,12 @@ func (this *Notifier) handleEvent(events chan core.DbPlayer, gotOnline bool) {
 			log.Printf("notifier: player %s got offline", p.Player.Name)
 		}
 
-		momenChatId := int64(5701113252)
+		momenChatIds := map[int64]bool{
+			int64(5701113252): true,
+			int64(111398839):  true,
+		}
 		for _, chatId := range chatIds {
-			if chatId == momenChatId {
+			if momenChatIds[chatId] {
 				continue
 			}
 			this.bot.Send(tgbotapi.NewMessage(chatId, msg))
