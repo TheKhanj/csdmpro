@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
+	"github.com/thekhanj/csdmpro/tg/middlewares"
 	"github.com/thekhanj/tgool"
 	"golang.org/x/net/proxy"
 )
@@ -67,13 +68,19 @@ func (this *ServerBuilder) Build() (*Server, error) {
 		return nil, err
 	}
 
-	var router *tgool.Router
+	ms := make([]tgool.Middleware, 0)
+
+	ms = append(ms,
+		// TODO: don't hard code this
+		middlewares.NewBilakhMiddleware([]int64{}),
+	)
+
 	if this.controllers != nil {
 		m := tgool.NewControllerMiddleware(this.controllers...)
-		router = tgool.NewRouter(m)
-	} else {
-		router = tgool.NewRouter()
+		ms = append(ms, m)
 	}
+
+	router := tgool.NewRouter(ms...)
 
 	return &Server{bot, router}, nil
 }

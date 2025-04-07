@@ -47,8 +47,6 @@ Just add them to your watchlist, and I'll handle the rest. 🚀`
 	} else {
 		txt += "👀 Currently Tracked Players:\n"
 		for _, tp := range tps {
-			// todo: show red for offline
-
 			var status string
 			if tp.IsOnline {
 				status = "🟢"
