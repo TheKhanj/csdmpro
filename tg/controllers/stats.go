@@ -47,28 +47,38 @@ func (this *StatsController) Index(
 		if p1.Player.Rank != nil {
 			r1 = *p1.Player.Rank
 		}
-
-		var r2 int = -1
-		if p2.Player.Rank != nil {
-			r2 = *p2.Player.Rank
-		}
-
 		row := tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				fmt.Sprintf("(%d) %s", r1, p1.Player.Name),
 				fmt.Sprintf("/players/%d", p1.ID),
 			),
-			tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("(%d) %s", r2, p2.Player.Name),
-				fmt.Sprintf("/players/%d", p2.ID),
-			),
 		)
+
+		if p2 != nil {
+			var r2 int = -1
+			if p2.Player.Rank != nil {
+				r2 = *p2.Player.Rank
+			}
+
+			row = append(row,
+				tgbotapi.NewInlineKeyboardButtonData(
+					fmt.Sprintf("(%d) %s", r2, p2.Player.Name),
+					fmt.Sprintf("/players/%d", p2.ID),
+				),
+			)
+		}
 
 		return row
 	}
 
 	for i := 0; i < len(players)-1; i += 2 {
-		row := getTwoPlayerKeyboard(&players[i], &players[i+1])
+		p1 := &players[i]
+		var p2 *core.DbPlayer = nil
+		if i+1 < len(players) {
+			p2 = &players[i+1]
+		}
+
+		row := getTwoPlayerKeyboard(p1, p2)
 		rows = append(rows, row)
 	}
 
