@@ -2,8 +2,7 @@ package tg
 
 import (
 	"context"
-	"log"
-	"sync"
+	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/thekhanj/tgool"
@@ -25,18 +24,29 @@ func (this *Server) Listen(ctx context.Context) {
 		this.bot,
 	)
 
-	var wg sync.WaitGroup
-	wg.Add(1)
-
+	tgDone := make(chan struct{})
 	go func() {
-		defer wg.Done()
+		defer close(tgDone)
 
 		tgoolEngine.HandleUpdates(updates)
 	}()
 
+	forceStopCtx := ctx
+
+	if os.Getenv("ENV") == "dev" {
+		c, cancel := context.WithCancel(ctx)
+		cancel()
+
+		forceStopCtx = c
+	}
+
 	<-ctx.Done()
 	this.bot.StopReceivingUpdates()
 
-	wg.Wait()
-	log.Println("ends too!")
+	select {
+	case <-tgDone:
+		return
+	case <-forceStopCtx.Done():
+		return
+	}
 }
