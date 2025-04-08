@@ -55,11 +55,13 @@ func ProvideControllers(
 		WatchlistRepo: watchlistRepo,
 	}
 	stats := &controllers.StatsController{PlayerRepo: playerRepo}
+	onlines := &controllers.OnlinesController{PlayerRepo: playerRepo}
 
 	return TgControllers{
-		watchlist,
 		start,
+		watchlist,
 		stats,
+		onlines,
 	}
 }
 

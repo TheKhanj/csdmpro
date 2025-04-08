@@ -89,6 +89,12 @@ func (this *StatsController) Index(
 	rows = append(rows,
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
+				"🔄 Refresh List",
+				"/stats/0",
+			),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
 				"🔙 Back",
 				"/start",
 			),
