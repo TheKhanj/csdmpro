@@ -32,16 +32,7 @@ func (this *TestingObserverFactory) Init(t *testing.T) {
 		Players: make([]Player, 0),
 	}
 
-	this.Observer = &Observer{
-		Repo:           repo,
-		Crawler:        this.Crawler,
-		GotOnline:      make(chan DbPlayer),
-		GotOffline:     make(chan DbPlayer),
-		UpdatedPlayer:  make(chan PlayerId),
-		AddedPlayer:    make(chan PlayerId),
-		StatsInterval:  0,
-		OnlineInterval: 0,
-	}
+	this.Observer = NewObserver(repo, this.Crawler, 0, 0)
 }
 
 func (this *TestingObserverFactory) Deinit() {
@@ -53,10 +44,19 @@ func TestObserverSimply(t *testing.T) {
 	tof.Init(t)
 	defer tof.Deinit()
 
-	ctx, cancel := context.WithTimeout(t.Context(), time.Second*5)
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*1)
 	defer cancel()
 
 	go tof.Observer.Start(ctx)
+	go func() {
+		for {
+			select {
+			case <-tof.Observer.UpdatedPlayer:
+			case <-tof.Observer.AddedPlayer:
+				// throw away channels
+			}
+		}
+	}()
 
 	c := tof.Crawler
 
@@ -96,13 +96,23 @@ func TestObserverStats(t *testing.T) {
 	defer cancel()
 
 	go tof.Observer.Start(ctx)
+	go func() {
+		for {
+			select {
+			case <-tof.Observer.UpdatedPlayer:
+			case <-tof.Observer.AddedPlayer:
+				// throw away channels
+			}
+		}
+	}()
 
 	c := tof.Crawler
 
+	oneRank := 1
 	player := Player{
 		Name:    "thekhanj",
 		Country: "Iran 😭, fuck IRAN, ISLAMIC REPUBLIC to be more accurate. Iran is lovely❤️",
-		Rank:    1,
+		Rank:    &oneRank,
 	}
 	c.Players = append(c.Players, player)
 
@@ -113,7 +123,8 @@ func TestObserverStats(t *testing.T) {
 		t.Logf("new player with id %d created", id)
 	}
 
-	c.Players[0].Rank = 2
+	twoRank := 2
+	c.Players[0].Rank = &twoRank
 
 	select {
 	case <-ctx.Done():
@@ -132,6 +143,15 @@ func TestObserverMultipleEvents(t *testing.T) {
 	defer cancel()
 
 	go tof.Observer.Start(ctx)
+	go func() {
+		for {
+			select {
+			case <-tof.Observer.UpdatedPlayer:
+			case <-tof.Observer.AddedPlayer:
+				// throw away channels
+			}
+		}
+	}()
 
 	c := tof.Crawler
 

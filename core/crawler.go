@@ -18,7 +18,7 @@ const CSDMPRO_SITE = "https://www.csdm.pro"
 type Player struct {
 	Name     string
 	Country  string
-	Rank     int
+	Rank     *int
 	Score    int
 	Kills    int
 	Deaths   int
@@ -92,7 +92,7 @@ func (this *HttpCrawler) parseBody(body io.ReadCloser) ([]Player, error) {
 		player := Player{
 			Name:     username,
 			Country:  imgSrc,
-			Rank:     rank,
+			Rank:     &rank,
 			Score:    score,
 			Kills:    kills,
 			Deaths:   deaths,

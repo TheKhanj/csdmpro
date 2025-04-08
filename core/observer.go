@@ -12,20 +12,21 @@ import (
 )
 
 type Observer struct {
-	Repo           *PlayerRepo
-	Crawler        Crawler
-	GotOnline      chan DbPlayer
-	GotOffline     chan DbPlayer
-	UpdatedPlayer  chan PlayerId
-	AddedPlayer    chan PlayerId
-	StatsInterval  time.Duration
-	OnlineInterval time.Duration
+	GotOnline     chan DbPlayer
+	GotOffline    chan DbPlayer
+	UpdatedPlayer chan PlayerId
+	AddedPlayer   chan PlayerId
+
+	repo           *PlayerRepo
+	crawler        Crawler
+	statsInterval  time.Duration
+	onlineInterval time.Duration
 
 	wg sync.WaitGroup
 }
 
 func (this *Observer) observeOnlinePlayers() error {
-	players, err := this.Crawler.Online()
+	players, err := this.crawler.Online()
 	if err != nil {
 		return err
 	}
@@ -35,7 +36,7 @@ func (this *Observer) observeOnlinePlayers() error {
 	}
 
 	for _, player := range players {
-		p, err := this.Repo.GetPlayerByName(player.Name)
+		p, err := this.repo.GetPlayerByName(player.Name)
 		not_found := err == ERR_PLAYER_NOT_FOUND
 		if err != nil && !not_found {
 			pErr(err)
@@ -43,21 +44,21 @@ func (this *Observer) observeOnlinePlayers() error {
 		}
 
 		if not_found {
-			id, err := this.Repo.AddPlayer(player)
+			id, err := this.repo.AddPlayer(player)
 			if err != nil {
 				pErr(err)
 				continue
 			}
 			this.AddedPlayer <- id
 
-			p, err = this.Repo.GetPlayerByName(player.Name)
+			p, err = this.repo.GetPlayerByName(player.Name)
 			if err != nil {
 				pErr(err)
 				continue
 			}
 		}
 
-		isOnlineAlready, err := this.Repo.IsOnline(player.Name)
+		isOnlineAlready, err := this.repo.IsOnline(player.Name)
 		if err != nil {
 			pErr(err)
 			continue
@@ -66,7 +67,7 @@ func (this *Observer) observeOnlinePlayers() error {
 			continue
 		}
 
-		err = this.Repo.AddOnlinePlayer(PlayerId(p.ID))
+		err = this.repo.AddOnlinePlayer(PlayerId(p.ID))
 		if err != nil {
 			pErr(err)
 			continue
@@ -75,7 +76,7 @@ func (this *Observer) observeOnlinePlayers() error {
 		this.GotOnline <- p
 	}
 
-	prevOnlines, err := this.Repo.Onlines()
+	prevOnlines, err := this.repo.Onlines()
 	if err != nil {
 		return err
 	}
@@ -93,7 +94,7 @@ func (this *Observer) observeOnlinePlayers() error {
 			continue
 		}
 
-		err = this.Repo.RemoveOnlinePlayer(prevOnline.ID)
+		err = this.repo.RemoveOnlinePlayer(prevOnline.ID)
 		if err != nil {
 			pErr(err)
 			continue
@@ -106,13 +107,13 @@ func (this *Observer) observeOnlinePlayers() error {
 }
 
 func (this *Observer) observePlayersPage(page int) error {
-	players, err := this.Crawler.Stats(page)
+	players, err := this.crawler.Stats(page)
 	if err != nil {
 		return err
 	}
 
 	for _, player := range players {
-		p, err := this.Repo.GetPlayerByName(player.Name)
+		p, err := this.repo.GetPlayerByName(player.Name)
 		not_found := err == ERR_PLAYER_NOT_FOUND
 		if err != nil && !not_found {
 			log.Println(err)
@@ -120,7 +121,18 @@ func (this *Observer) observePlayersPage(page int) error {
 		}
 
 		if !not_found {
-			err := this.Repo.UpdatePlayer(p.ID, player)
+			if player.Rank == nil {
+				log.Println("observer: debug: not expected rank value <nil>")
+				continue
+			}
+
+			err = this.unrankSameRankPlayers(*player.Rank)
+			if err != nil {
+				log.Println(err)
+				continue
+			}
+
+			err = this.repo.UpdatePlayer(p.ID, player)
 			if err != nil {
 				log.Println(err)
 			}
@@ -128,11 +140,28 @@ func (this *Observer) observePlayersPage(page int) error {
 			continue
 		}
 
-		id, err := this.Repo.AddPlayer(player)
+		id, err := this.repo.AddPlayer(player)
 		if err != nil {
 			log.Println(err)
 		}
 		this.AddedPlayer <- id
+	}
+
+	return nil
+}
+
+func (this *Observer) unrankSameRankPlayers(rank int) error {
+	players, err := this.repo.GetByRank(rank)
+	if err != nil {
+		return err
+	}
+
+	for _, p := range players {
+		p.Player.Rank = nil
+		err = this.repo.UpdatePlayer(p.ID, p.Player)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -172,7 +201,7 @@ func (this *Observer) Start(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(this.OnlineInterval):
+			case <-time.After(this.onlineInterval):
 			}
 		}
 	}()
@@ -188,7 +217,7 @@ func (this *Observer) Start(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 				return
-			case <-time.After(this.StatsInterval):
+			case <-time.After(this.statsInterval):
 			}
 		}
 	}()
@@ -205,4 +234,21 @@ func (this *Observer) stop() {
 	close(this.GotOffline)
 	close(this.UpdatedPlayer)
 	close(this.AddedPlayer)
+}
+
+func NewObserver(
+	repo *PlayerRepo, crawler Crawler,
+	statsInterval time.Duration, onlineInterval time.Duration,
+) *Observer {
+	return &Observer{
+		GotOnline:     make(chan DbPlayer, 0),
+		GotOffline:    make(chan DbPlayer, 0),
+		UpdatedPlayer: make(chan PlayerId, 0),
+		AddedPlayer:   make(chan PlayerId, 0),
+
+		repo:           repo,
+		crawler:        crawler,
+		statsInterval:  statsInterval,
+		onlineInterval: onlineInterval,
+	}
 }

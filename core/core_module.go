@@ -18,16 +18,9 @@ func ProvidePlayerRepo(db db.Database) *PlayerRepo {
 }
 
 func ProvideObserver(repo *PlayerRepo) *Observer {
-	return &Observer{
-		Repo:           repo,
-		Crawler:        &HttpCrawler{},
-		GotOnline:      make(chan DbPlayer, 0),
-		GotOffline:     make(chan DbPlayer, 0),
-		UpdatedPlayer:  make(chan PlayerId, 0),
-		AddedPlayer:    make(chan PlayerId, 0),
-		StatsInterval:  time.Minute * 20,
-		OnlineInterval: time.Minute,
-	}
+	return NewObserver(
+		repo, &HttpCrawler{}, time.Minute*20, time.Minute,
+	)
 }
 
 var CoreModule = wire.NewSet(

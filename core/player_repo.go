@@ -35,6 +35,32 @@ func (this *PlayerRepo) AddPlayer(player Player) (PlayerId, error) {
 	return PlayerId(id), err
 }
 
+func (this *PlayerRepo) GetByRank(rank int) ([]DbPlayer, error) {
+	rows, err := this.Database.Query(fmt.Sprintf(`
+		SELECT %s
+		FROM players as p
+		WHERE rank = ?
+		ORDER BY p.rank ASC
+	`, this.getPlayerFields("p.")), rank)
+	if err != nil {
+		return []DbPlayer{}, err
+	}
+	defer rows.Close()
+
+	players := make([]DbPlayer, 0, 0)
+
+	for rows.Next() {
+		p, err := this.scanPlayer(rows)
+		if err != nil {
+			return nil, err
+		}
+
+		players = append(players, p)
+	}
+
+	return players, nil
+}
+
 func (this *PlayerRepo) UpdatePlayer(id PlayerId, player Player) error {
 	insertSQL := `
 	UPDATE players
@@ -98,15 +124,15 @@ func (this *PlayerRepo) Onlines() ([]DbPlayer, error) {
 
 func (this *PlayerRepo) scanPlayer(rows *sql.Rows) (DbPlayer, error) {
 	var p DbPlayer
-	var id PlayerId
+	var rank int
+	p.Player.Rank = &rank
 
 	err := rows.Scan(
-		&id,
+		&p.ID,
 		&p.Player.Name, &p.Player.Country,
 		&p.Player.Rank, &p.Player.Score, &p.Player.Kills,
 		&p.Player.Deaths, &p.Player.Accuracy,
 	)
-	p.ID = id
 
 	return p, err
 }
