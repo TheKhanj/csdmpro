@@ -78,6 +78,12 @@ Just add them to your watchlist, and I'll handle the rest. 🚀`
 				"/watchlist",
 			),
 		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				"🔙 Back",
+				"/start",
+			),
+		),
 	)
 
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(rows...)
@@ -123,7 +129,7 @@ Select a player to add to your watchlist`
 		return row
 	}
 
-	for i := 0; i < len(players )-1; i += 2 {
+	for i := 0; i < len(players)-1; i += 2 {
 		row := getTwoPlayerKeyboard(&players[i], &players[i+1])
 		rows = append(rows, row)
 	}

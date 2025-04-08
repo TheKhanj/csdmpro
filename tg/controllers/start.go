@@ -5,9 +5,7 @@ import (
 	"github.com/thekhanj/tgool"
 )
 
-type StartController struct {
-	WatchlistController *WatchlistController
-}
+type StartController struct{}
 
 func (this *StartController) AddRoutes(b *tgool.RouterBuilder) {
 	b.SetPrefixRoute("/start").
@@ -17,7 +15,35 @@ func (this *StartController) AddRoutes(b *tgool.RouterBuilder) {
 func (this *StartController) Index(
 	ctx tgool.Context,
 ) (tgbotapi.Chattable, error) {
-	return this.WatchlistController.Index(ctx)
+	msg := tgbotapi.NewMessage(
+		ctx.GetChatId(),
+		`👋 Welcome to the csdmpro Bot!
+
+Track your performance, keep an eye on your watchlist, or check who's online — all in one place.
+
+Choose a page to get started 👇`,
+	)
+
+	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				"📊 Stats",
+				"/stats/0",
+			),
+			tgbotapi.NewInlineKeyboardButtonData(
+				"🟢 Online Players",
+				"/onlines",
+			),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
+				"👁️ Watchlist",
+				"/watchlist",
+			),
+		),
+	)
+
+	return msg, nil
 }
 
 var _ tgool.Controller = (*StartController)(nil)
