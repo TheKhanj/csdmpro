@@ -56,10 +56,12 @@ func ProvideControllers(
 	start := &controllers.StartController{
 		WatchlistController: watchlist,
 	}
+	stats := &controllers.StatsController{PlayerRepo: playerRepo}
 
 	return TgControllers{
 		watchlist,
 		start,
+		stats,
 	}
 }
 

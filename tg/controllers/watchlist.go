@@ -97,7 +97,7 @@ func (this *WatchlistController) AddPlayersIndex(
 
 Select a player to add to your watchlist`
 
-	players, err := this.PlayerRepo.List(page*20, 20)
+	players, err := this.PlayerRepo.List(page*20, 21)
 	if err != nil {
 		return nil, err
 	}
@@ -108,7 +108,7 @@ Select a player to add to your watchlist`
 
 	getTwoPlayerKeyboard := func(
 		p1 *core.DbPlayer, p2 *core.DbPlayer,
-	) ([]tgbotapi.InlineKeyboardButton, error) {
+	) []tgbotapi.InlineKeyboardButton {
 		row := tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
 				fmt.Sprintf("✔️ %s", p1.Player.Name),
@@ -120,16 +120,11 @@ Select a player to add to your watchlist`
 			),
 		)
 
-		return row, nil
+		return row
 	}
 
-	for i := 0; i < len(players); i += 2 {
-		p1 := players[i]
-		p2 := players[i+1]
-		row, err := getTwoPlayerKeyboard(&p1, &p2)
-		if err != nil {
-			return nil, err
-		}
+	for i := 0; i < len(players )-1; i += 2 {
+		row := getTwoPlayerKeyboard(&players[i], &players[i+1])
 		rows = append(rows, row)
 	}
 
@@ -143,16 +138,14 @@ Select a player to add to your watchlist`
 		)
 	}
 
-	// TODO: fix
-	// if page!=end
-
-	fmt.Printf("/watchlist/add-players/%d", page+1)
-	paginationButtons = append(
-		paginationButtons, tgbotapi.NewInlineKeyboardButtonData(
-			fmt.Sprintf("Next Page ➡️"),
-			fmt.Sprintf("/watchlist/add-players/%d", page+1),
-		),
-	)
+	if len(players) == 21 {
+		paginationButtons = append(
+			paginationButtons, tgbotapi.NewInlineKeyboardButtonData(
+				fmt.Sprintf("Next Page ➡️"),
+				fmt.Sprintf("/watchlist/add-players/%d", page+1),
+			),
+		)
+	}
 
 	rows = append(rows,
 		tgbotapi.NewInlineKeyboardRow(paginationButtons...),

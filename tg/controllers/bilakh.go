@@ -33,7 +33,7 @@ func (this *BilakhController) Index(
 
 	txt := `Surprise! 🎁
 
-	You’ve received a certified Bilakh™ from the universe. 👍`
+You’ve received a certified Bilakh™ from the universe. 👍`
 
 	msg := tgbotapi.NewMessage(chatId, txt)
 
