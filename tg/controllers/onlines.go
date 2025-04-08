@@ -57,7 +57,7 @@ func (this *OnlinesController) Index(
 
 		var p2 *core.DbPlayer = nil
 		if i+1 < len(players) {
-			p2 = &players[i]
+			p2 = &players[i+1]
 		}
 
 		row := getTwoPlayerKeyboard(p1, p2)

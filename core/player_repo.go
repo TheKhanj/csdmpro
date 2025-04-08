@@ -27,9 +27,13 @@ func (this *PlayerRepo) AddPlayer(player Player) (PlayerId, error) {
 	row, err := this.Database.Exec(
 		insertSQL,
 		player.Name, player.Country,
-		player.Rank, player.Score, player.Kills,
+		*player.Rank, player.Score, player.Kills,
 		player.Deaths, player.Accuracy,
 	)
+	if err != nil {
+		return 0, err
+	}
+
 	id, err := row.LastInsertId()
 
 	return PlayerId(id), err
@@ -99,6 +103,7 @@ func (this *PlayerRepo) Onlines() ([]DbPlayer, error) {
 			`SELECT %s
 				FROM players_online as online
 				INNER JOIN players as player on player.id = online.player_id
+				WHERE player.rank IS NOT NULL
 				ORDER BY player.rank ASC
 			`,
 			this.getPlayerFields("player."),
@@ -154,7 +159,7 @@ func (this *PlayerRepo) GetPlayerByName(name string) (DbPlayer, error) {
 	rows, err := this.Database.Query(fmt.Sprintf(`
 		SELECT %s
 		FROM players as p
-		WHERE name = ?
+		WHERE name = ? AND p.rank IS NOT NULL
 		ORDER BY p.rank ASC
 		LIMIT 1
 	`, this.getPlayerFields("p.")), name)
@@ -205,6 +210,7 @@ func (this *PlayerRepo) List(offset int, limit int) ([]DbPlayer, error) {
 	rows, err := this.Database.Query(fmt.Sprintf(`
 		SELECT %s
 		FROM players as p
+		WHERE p.rank IS NOT NULL
 		ORDER BY p.rank ASC
 		LIMIT ? OFFSET ?
 	`, this.getPlayerFields("p.")), limit, offset)
@@ -230,7 +236,7 @@ func (this *PlayerRepo) List(offset int, limit int) ([]DbPlayer, error) {
 func CreatePlayerRepo(db *sql.DB) (*PlayerRepo, error) {
 	createPlayersStatsTable := `CREATE TABLE IF NOT EXISTS players (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT UNIQUE,
+		name TEXT,
 		country TEXT,
 		rank INTEGER,
 		score INTEGER,

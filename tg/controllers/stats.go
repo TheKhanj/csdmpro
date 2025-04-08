@@ -43,13 +43,23 @@ func (this *StatsController) Index(
 	getTwoPlayerKeyboard := func(
 		p1 *core.DbPlayer, p2 *core.DbPlayer,
 	) []tgbotapi.InlineKeyboardButton {
+		var r1 int = -1
+		if p1.Player.Rank != nil {
+			r1 = *p1.Player.Rank
+		}
+
+		var r2 int = -1
+		if p2.Player.Rank != nil {
+			r2 = *p2.Player.Rank
+		}
+
 		row := tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("(%d) %s", p1.Player.Rank, p1.Player.Name),
+				fmt.Sprintf("(%d) %s", r1, p1.Player.Name),
 				fmt.Sprintf("/players/%d", p1.ID),
 			),
 			tgbotapi.NewInlineKeyboardButtonData(
-				fmt.Sprintf("(%d) %s", p2.Player.Rank, p2.Player.Name),
+				fmt.Sprintf("(%d) %s", r2, p2.Player.Name),
 				fmt.Sprintf("/players/%d", p2.ID),
 			),
 		)
@@ -119,6 +129,11 @@ func (this *StatsController) PlayerIndex(
 		return nil, err
 	}
 
+	rank := -1
+	if p.Player.Rank != nil {
+		rank = *p.Player.Rank
+	}
+
 	msg := tgbotapi.NewMessage(ctx.GetChatId(),
 		fmt.Sprintf(
 			`🎮 Player %s Stats
@@ -131,7 +146,7 @@ func (this *StatsController) PlayerIndex(
 🎯 Accuracy: %d%%`,
 			p.Player.Name,
 			p.Player.Country,
-			p.Player.Rank,
+			rank,
 			p.Player.Score,
 			p.Player.Kills,
 			p.Player.Deaths,
