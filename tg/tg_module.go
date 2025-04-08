@@ -24,6 +24,15 @@ func ProvideWatchlistRepo(db db.Database) *repo.WatchlistRepo {
 	return repo
 }
 
+func ProvideBilakhRepo(db db.Database) *repo.BilakhRepo {
+	repo, err := repo.CreateBilakhRepo(db)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return repo
+}
+
 func ProvideWatchlistService(
 	playerRepo *core.PlayerRepo,
 	watchlistRepo *repo.WatchlistRepo,
@@ -54,12 +63,16 @@ func ProvideControllers(
 	}
 }
 
-func ProvideTg(controllers TgControllers) *Server {
+func ProvideTg(
+	controllers TgControllers,
+	bilakhRepo *repo.BilakhRepo,
+) *Server {
 	serverBuilder := ServerBuilder{}
 
 	serverBuilder.
 		WithToken(os.Getenv("API_TOKEN")).
-		WithControllers(controllers...)
+		WithControllers(controllers...).
+		WithBilakhRepo(bilakhRepo)
 
 	socks_proxy := os.Getenv("http_proxy")
 	if socks_proxy != "" {
@@ -89,6 +102,7 @@ func ProvideNotifier(
 }
 
 var TgModule = wire.NewSet(
-	ProvideTg, ProvideControllers, ProvideWatchlistRepo,
+	ProvideTg, ProvideControllers,
+	ProvideWatchlistRepo, ProvideBilakhRepo,
 	ProvideWatchlistService, ProvideNotifier,
 )

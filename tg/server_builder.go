@@ -6,6 +6,7 @@ import (
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/thekhanj/csdmpro/tg/middlewares"
+	"github.com/thekhanj/csdmpro/tg/repo"
 	"github.com/thekhanj/tgool"
 	"golang.org/x/net/proxy"
 )
@@ -15,6 +16,7 @@ type ServerBuilder struct {
 	http_client *http.Client
 	token       string
 	controllers []tgool.Controller
+	bilakhRepo  *repo.BilakhRepo
 }
 
 // WithProxy uses a socks5 proxy for connecting to telegram'a api.
@@ -52,6 +54,11 @@ func (this *ServerBuilder) WithControllers(controllers ...tgool.Controller) *Ser
 	return this
 }
 
+func (this *ServerBuilder) WithBilakhRepo(repo *repo.BilakhRepo) *ServerBuilder {
+	this.bilakhRepo = repo
+	return this
+}
+
 func (this *ServerBuilder) Build() (*Server, error) {
 	if this.err != nil {
 		return nil, this.err
@@ -70,10 +77,9 @@ func (this *ServerBuilder) Build() (*Server, error) {
 
 	ms := make([]tgool.Middleware, 0)
 
-	ms = append(ms,
-		// TODO: don't hard code this
-		middlewares.NewBilakhMiddleware([]int64{}),
-	)
+	if this.bilakhRepo != nil {
+		ms = append(ms, middlewares.NewBilakhMiddleware(this.bilakhRepo))
+	}
 
 	if this.controllers != nil {
 		m := tgool.NewControllerMiddleware(this.controllers...)

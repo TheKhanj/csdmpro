@@ -1,13 +1,16 @@
 package middlewares
 
 import (
+	"log"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/thekhanj/csdmpro/tg/controllers"
+	"github.com/thekhanj/csdmpro/tg/repo"
 	"github.com/thekhanj/tgool"
 )
 
 type BilakhMiddleware struct {
-	bilakhChatIds map[int64]bool
+	repo *repo.BilakhRepo
 }
 
 func (this *BilakhMiddleware) Handle(
@@ -15,7 +18,12 @@ func (this *BilakhMiddleware) Handle(
 ) tgbotapi.Chattable {
 	chatId := ctx.GetChatId()
 
-	if !this.bilakhChatIds[chatId] {
+	isBilakhed, err := this.repo.IsBilakhed(chatId)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	if !isBilakhed {
 		next()
 		return nil
 	}
@@ -23,22 +31,11 @@ func (this *BilakhMiddleware) Handle(
 	m := tgool.NewControllerMiddleware(&controllers.BilakhController{})
 
 	ret := m.Handle(ctx, func() {})
-	if ret != nil {
-		return ret
-	}
-
-	defaultMiddleWare := tgool.DefaultMiddleWare{}
-	return defaultMiddleWare.Handle(ctx, next)
+	return ret
 }
 
-func NewBilakhMiddleware(bilakhChatIds []int64) *BilakhMiddleware {
-	bilakhMap := make(map[int64]bool, 0)
-
-	for _, chatId := range bilakhChatIds {
-		bilakhMap[chatId] = true
-	}
-
-	return &BilakhMiddleware{bilakhChatIds: bilakhMap}
+func NewBilakhMiddleware(bilakhRepo *repo.BilakhRepo) *BilakhMiddleware {
+	return &BilakhMiddleware{bilakhRepo}
 }
 
 var _ tgool.Middleware = (*BilakhMiddleware)(nil)
