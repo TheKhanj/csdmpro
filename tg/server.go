@@ -2,6 +2,7 @@ package tg
 
 import (
 	"context"
+	"log"
 	"os"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -31,22 +32,13 @@ func (this *Server) Listen(ctx context.Context) {
 		tgoolEngine.HandleUpdates(updates)
 	}()
 
-	forceStopCtx := ctx
-
-	if os.Getenv("ENV") == "dev" {
-		c, cancel := context.WithCancel(ctx)
-		cancel()
-
-		forceStopCtx = c
-	}
-
 	<-ctx.Done()
 	this.bot.StopReceivingUpdates()
 
-	select {
-	case <-tgDone:
-		return
-	case <-forceStopCtx.Done():
+	if os.Getenv("ENV") == "dev" {
+		log.Println("tg: server forecfully stopped")
 		return
 	}
+
+	<-tgDone
 }
