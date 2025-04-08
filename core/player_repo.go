@@ -236,7 +236,7 @@ func (this *PlayerRepo) List(offset int, limit int) ([]DbPlayer, error) {
 func CreatePlayerRepo(db *sql.DB) (*PlayerRepo, error) {
 	createPlayersStatsTable := `CREATE TABLE IF NOT EXISTS players (
 		id INTEGER PRIMARY KEY AUTOINCREMENT,
-		name TEXT,
+		name TEXT UNIQUE,
 		country TEXT,
 		rank INTEGER,
 		score INTEGER,
