@@ -159,7 +159,7 @@ func (this *PlayerRepo) GetPlayerByName(name string) (DbPlayer, error) {
 	rows, err := this.Database.Query(fmt.Sprintf(`
 		SELECT %s
 		FROM players as p
-		WHERE name = ? AND p.rank IS NOT NULL
+		WHERE name = ?
 		ORDER BY p.rank ASC
 		LIMIT 1
 	`, this.getPlayerFields("p.")), name)
