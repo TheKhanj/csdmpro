@@ -12,6 +12,9 @@ import (
 )
 
 type Notifier struct {
+	gotOnline  chan core.PlayerId
+	gotOffline chan core.PlayerId
+
 	observer      *core.Observer
 	watchlistRepo *repo.WatchlistRepo
 	playerRepo    *core.PlayerRepo
@@ -25,30 +28,17 @@ func (this *Notifier) Start(ctx context.Context) {
 
 	this.wg.Add(4)
 
-	throwAway := func(ch chan core.PlayerId, template string) {
-		defer this.wg.Done()
-
-		for id := range ch {
-			log.Printf(template, id)
-		}
-	}
-
-	go throwAway(
-		this.observer.AddedPlayer,
-		"notifier: new player added (id: %d)",
-	)
-	go throwAway(
-		this.observer.UpdatedPlayer,
-		"notifier: player updated (id: %d)",
-	)
 	go func() {
 		defer this.wg.Done()
+		this.gotOnline = this.observer.Bus.Sub(core.GotOnlineTopic)
 
-		this.handleEvent(this.observer.GotOnline, true)
+		this.handleEvent(this.gotOnline, true)
 	}()
 	go func() {
 		defer this.wg.Done()
-		go this.handleEvent(this.observer.GotOffline, false)
+		this.gotOffline = this.observer.Bus.Sub(core.GotOfflineTopic)
+
+		go this.handleEvent(this.gotOffline, false)
 	}()
 
 	<-ctx.Done()
@@ -57,12 +47,16 @@ func (this *Notifier) Start(ctx context.Context) {
 
 func (this *Notifier) stop() {
 	log.Println("notifier: stopping...")
+
+	go this.observer.Bus.Unsub(this.gotOnline)
+	go this.observer.Bus.Unsub(this.gotOffline)
+
 	this.wg.Wait()
 }
 
-func (this *Notifier) handleEvent(events chan core.DbPlayer, gotOnline bool) {
-	for p := range events {
-		player, err := this.playerRepo.GetPlayerByName(p.Player.Name)
+func (this *Notifier) handleEvent(events chan core.PlayerId, gotOnline bool) {
+	for playerId := range events {
+		player, err := this.playerRepo.GetPlayer(playerId)
 		if err != nil {
 			log.Printf("notifier: %s", err.Error())
 			continue
@@ -76,11 +70,11 @@ func (this *Notifier) handleEvent(events chan core.DbPlayer, gotOnline bool) {
 
 		var msg string
 		if gotOnline {
-			msg = fmt.Sprintf("🟢 Player %s got online", p.Player.Name)
-			log.Printf("notifier: player %s got online", p.Player.Name)
+			msg = fmt.Sprintf("🟢 Player %s got online", player.Player.Name)
+			log.Printf("notifier: player %s got online", player.Player.Name)
 		} else {
-			msg = fmt.Sprintf("🔴 Player %s got offline", p.Player.Name)
-			log.Printf("notifier: player %s got offline", p.Player.Name)
+			msg = fmt.Sprintf("🔴 Player %s got offline", player.Player.Name)
+			log.Printf("notifier: player %s got offline", player.Player.Name)
 		}
 
 		for _, chatId := range chatIds {

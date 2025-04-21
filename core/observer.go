@@ -8,14 +8,23 @@ import (
 	"sync"
 	"time"
 
+	"github.com/cskr/pubsub/v2"
 	_ "github.com/mattn/go-sqlite3"
 )
 
+type Topic int
+
+const (
+	GotOnlineTopic Topic = iota
+	GotOfflineTopic
+	AddedPlayerTopic
+	UpdatedPlayerTopic
+)
+
+type Bus = *pubsub.PubSub[Topic, PlayerId]
+
 type Observer struct {
-	GotOnline     chan DbPlayer
-	GotOffline    chan DbPlayer
-	UpdatedPlayer chan PlayerId
-	AddedPlayer   chan PlayerId
+	Bus Bus
 
 	repo           *PlayerRepo
 	crawler        Crawler
@@ -49,7 +58,7 @@ func (this *Observer) observeOnlinePlayers() error {
 				pErr(err)
 				continue
 			}
-			this.AddedPlayer <- id
+			this.Bus.Pub(id, AddedPlayerTopic)
 
 			p, err = this.repo.GetPlayerByName(player.Name)
 			if err != nil {
@@ -73,7 +82,7 @@ func (this *Observer) observeOnlinePlayers() error {
 			continue
 		}
 
-		this.GotOnline <- p
+		this.Bus.Pub(p.ID, GotOnlineTopic)
 	}
 
 	prevOnlines, err := this.repo.Onlines()
@@ -100,7 +109,7 @@ func (this *Observer) observeOnlinePlayers() error {
 			continue
 		}
 
-		this.GotOffline <- prevOnline
+		this.Bus.Pub(prevOnline.ID, GotOfflineTopic)
 	}
 
 	return nil
@@ -136,7 +145,7 @@ func (this *Observer) observePlayersPage(page int) error {
 			if err != nil {
 				log.Println(err)
 			}
-			this.UpdatedPlayer <- p.ID
+			this.Bus.Pub(p.ID, UpdatedPlayerTopic)
 			continue
 		}
 
@@ -144,7 +153,7 @@ func (this *Observer) observePlayersPage(page int) error {
 		if err != nil {
 			log.Println(err)
 		}
-		this.AddedPlayer <- id
+		this.Bus.Pub(id, AddedPlayerTopic)
 	}
 
 	return nil
@@ -230,10 +239,6 @@ func (this *Observer) stop() {
 	log.Println("observer: stopping...")
 
 	this.wg.Wait()
-	close(this.GotOnline)
-	close(this.GotOffline)
-	close(this.UpdatedPlayer)
-	close(this.AddedPlayer)
 }
 
 func NewObserver(
@@ -241,10 +246,7 @@ func NewObserver(
 	statsInterval time.Duration, onlineInterval time.Duration,
 ) *Observer {
 	return &Observer{
-		GotOnline:     make(chan DbPlayer, 0),
-		GotOffline:    make(chan DbPlayer, 0),
-		UpdatedPlayer: make(chan PlayerId, 0),
-		AddedPlayer:   make(chan PlayerId, 0),
+		Bus: pubsub.New[Topic, PlayerId](0),
 
 		repo:           repo,
 		crawler:        crawler,

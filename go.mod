@@ -4,6 +4,7 @@ go 1.24.0
 
 require (
 	github.com/PuerkitoBio/goquery v1.10.2
+	github.com/cskr/pubsub/v2 v2.0.2
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
 	github.com/google/wire v0.6.0
 	github.com/mattn/go-sqlite3 v1.14.27
