@@ -82,6 +82,17 @@ func (this *PlayerRepo) UpdatePlayer(id PlayerId, player Player) error {
 	return err
 }
 
+func (this *PlayerRepo) Unrank(rank int) error {
+	insertSQL := `
+	UPDATE players
+	SET rank = NULL
+	WHERE rank = ?`
+
+	_, err := this.Database.Exec(insertSQL, rank)
+
+	return err
+}
+
 func (this *PlayerRepo) IsOnline(name string) (bool, error) {
 	onlines, err := this.Onlines()
 	if err != nil {

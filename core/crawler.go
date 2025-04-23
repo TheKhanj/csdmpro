@@ -106,36 +106,3 @@ func (this *HttpCrawler) parseBody(body io.ReadCloser) ([]Player, error) {
 
 var _ Crawler = (*HttpCrawler)(nil)
 
-type StubCrawler struct {
-	Onlines []Player
-	Players []Player
-}
-
-func (this *StubCrawler) Stats(page int) ([]Player, error) {
-	l := (page - 1) * 50
-	r := page * 50
-
-	if r > len(this.Players) {
-		return this.Players[:], nil
-	}
-
-	ret := make([]Player, 0, r-l)
-	for _, p := range this.Players[l:r] {
-		player := Player{}
-		player = p
-		ret = append(ret, player)
-	}
-
-	return ret, nil
-}
-
-func (this *StubCrawler) Online() ([]Player, error) {
-	ret := make([]Player, 0, len(this.Onlines))
-	for _, p := range this.Onlines {
-		player := Player{}
-		player = p
-		ret = append(ret, player)
-	}
-
-	return ret, nil
-}

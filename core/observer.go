@@ -2,7 +2,6 @@ package core
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"sync"
@@ -40,152 +39,140 @@ func (this *Observer) observeOnlinePlayers() error {
 		return err
 	}
 
-	pErr := func(err error) {
-		log.Println(fmt.Errorf("observer: online: %s", err.Error()))
-	}
-
 	for _, player := range players {
-		p, err := this.repo.GetPlayerByName(player.Name)
-		not_found := err == ERR_PLAYER_NOT_FOUND
-		if err != nil && !not_found {
-			pErr(err)
-			continue
-		}
-
-		if not_found {
-			id, err := this.repo.AddPlayer(player)
-			if err != nil {
-				pErr(err)
-				continue
-			}
-			this.Bus.Pub(id, AddedPlayerTopic)
-
-			p, err = this.repo.GetPlayerByName(player.Name)
-			if err != nil {
-				pErr(err)
-				continue
-			}
-		}
-
-		isOnlineAlready, err := this.repo.IsOnline(player.Name)
+		err := this.handlePlayer(player)
 		if err != nil {
-			pErr(err)
+			log.Printf("observer: onlines: %s", err)
 			continue
 		}
-		if isOnlineAlready {
-			continue
-		}
-
-		err = this.repo.AddOnlinePlayer(PlayerId(p.ID))
-		if err != nil {
-			pErr(err)
-			continue
-		}
-
-		this.Bus.Pub(p.ID, GotOnlineTopic)
 	}
 
-	prevOnlines, err := this.repo.Onlines()
+	return this.handleOnlinePlayers(players)
+}
+
+func (this *Observer) handlePlayer(player Player) error {
+	err := this.repo.Unrank(*player.Rank)
 	if err != nil {
 		return err
 	}
 
-	for _, prevOnline := range prevOnlines {
-		isStillOnline := false
-		for _, player := range players {
-			if prevOnline.Player.Name == player.Name {
-				isStillOnline = true
-				break
-			}
-		}
-
-		if isStillOnline {
-			continue
-		}
-
-		err = this.repo.RemoveOnlinePlayer(prevOnline.ID)
+	p, err := this.repo.GetPlayerByName(player.Name)
+	not_found := err == ERR_PLAYER_NOT_FOUND
+	if not_found {
+		pId, err := this.repo.AddPlayer(player)
 		if err != nil {
-			pErr(err)
-			continue
+			return err
+		}
+		p, err = this.repo.GetPlayer(pId)
+		if err != nil {
+			return err
 		}
 
-		this.Bus.Pub(prevOnline.ID, GotOfflineTopic)
+		this.Bus.Pub(p.ID, AddedPlayerTopic)
+	} else {
+		err := this.repo.UpdatePlayer(p.ID, player)
+		if err != nil {
+			return err
+		}
+
+		this.Bus.Pub(p.ID, UpdatedPlayerTopic)
 	}
 
 	return nil
 }
 
-func (this *Observer) observePlayersPage(page int) error {
+func (this *Observer) handleOnlinePlayers(areOnlines []Player) error {
+	wasOnline, err := this.getWasOnline()
+	if err != nil {
+		return err
+	}
+	isOnline, err := this.getIsOnline(areOnlines)
+	if err != nil {
+		return err
+	}
+
+	for id, isOnline := range isOnline {
+		if isOnline && !wasOnline[id] {
+			err := this.repo.AddOnlinePlayer(id)
+			if err != nil {
+				log.Printf("observer: %s", err)
+			}
+			this.Bus.Pub(id, GotOnlineTopic)
+		}
+	}
+
+	for id, wasOnline := range wasOnline {
+		if wasOnline && !isOnline[id] {
+			err := this.repo.RemoveOnlinePlayer(id)
+			if err != nil {
+				log.Printf("observer: %s", err)
+			}
+			this.Bus.Pub(id, GotOfflineTopic)
+		}
+	}
+
+	return nil
+}
+
+type OnlineMap = map[PlayerId]bool
+
+func (this *Observer) getIsOnline(players []Player) (OnlineMap, error) {
+	ret := make(OnlineMap, 0)
+
+	for _, p := range players {
+		dbp, err := this.repo.GetPlayerByName(p.Name)
+		if err != nil {
+			return nil, err
+		}
+
+		ret[dbp.ID] = true
+	}
+
+	return ret, nil
+}
+
+func (this *Observer) getWasOnline() (OnlineMap, error) {
+	wereOnlines, err := this.repo.Onlines()
+	if err != nil {
+		return nil, err
+	}
+
+	ret := make(OnlineMap, len(wereOnlines))
+
+	for _, p := range wereOnlines {
+		ret[p.ID] = true
+	}
+
+	return ret, nil
+}
+
+func (this *Observer) observeStatsPage(page int) error {
 	players, err := this.crawler.Stats(page)
 	if err != nil {
 		return err
 	}
 
 	for _, player := range players {
-		p, err := this.repo.GetPlayerByName(player.Name)
-		not_found := err == ERR_PLAYER_NOT_FOUND
-		if err != nil && !not_found {
-			log.Println(err)
-			continue
-		}
-
-		if !not_found {
-			if player.Rank == nil {
-				log.Println("observer: debug: not expected rank value <nil>")
-				continue
-			}
-
-			err = this.unrankSameRankPlayers(*player.Rank)
-			if err != nil {
-				log.Println(err)
-				continue
-			}
-
-			err = this.repo.UpdatePlayer(p.ID, player)
-			if err != nil {
-				log.Println(err)
-			}
-			this.Bus.Pub(p.ID, UpdatedPlayerTopic)
-			continue
-		}
-
-		id, err := this.repo.AddPlayer(player)
+		err := this.handlePlayer(player)
 		if err != nil {
-			log.Println(err)
-		}
-		this.Bus.Pub(id, AddedPlayerTopic)
-	}
-
-	return nil
-}
-
-func (this *Observer) unrankSameRankPlayers(rank int) error {
-	players, err := this.repo.GetByRank(rank)
-	if err != nil {
-		return err
-	}
-
-	for _, p := range players {
-		p.Player.Rank = nil
-		err = this.repo.UpdatePlayer(p.ID, p.Player)
-		if err != nil {
-			return err
+			log.Printf("observer: stats: page %d: %s", page, err)
+			continue
 		}
 	}
 
 	return nil
 }
 
-func (this *Observer) observePlayers() {
+func (this *Observer) observeStats() {
 	pageCount := 20
 	if os.Getenv("ENV") == "dev" {
 		pageCount = 1
 	}
 
 	for page := 1; page <= pageCount; page++ {
-		err := this.observePlayersPage(page)
+		err := this.observeStatsPage(page)
 		if err != nil {
-			log.Println(err)
+			log.Printf("observer: stats: page %d: %s", page, err)
 		}
 	}
 }
@@ -221,7 +208,7 @@ func (this *Observer) Start(ctx context.Context) {
 		defer log.Println("observer: stopped observing stats")
 
 		for {
-			this.observePlayers()
+			this.observeStats()
 
 			select {
 			case <-ctx.Done():

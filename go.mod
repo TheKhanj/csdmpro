@@ -3,6 +3,7 @@ module github.com/thekhanj/csdmpro
 go 1.24.0
 
 require (
+	github.com/Pallinder/go-randomdata v1.2.0
 	github.com/PuerkitoBio/goquery v1.10.2
 	github.com/cskr/pubsub/v2 v2.0.2
 	github.com/go-telegram-bot-api/telegram-bot-api/v5 v5.5.1
