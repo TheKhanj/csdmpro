@@ -24,10 +24,15 @@ func (this *PlayerRepo) AddPlayer(player Player) (PlayerId, error) {
 	INSERT INTO players (name, country, rank, score, kills, deaths, accuracy)
 	VALUES (?, ?, ?, ?, ?, ?, ?)`
 
+	var rank any = player.Rank
+	if player.Rank != nil {
+		rank = *player.Rank
+	}
+
 	row, err := this.Database.Exec(
 		insertSQL,
 		player.Name, player.Country,
-		*player.Rank, player.Score, player.Kills,
+		rank, player.Score, player.Kills,
 		player.Deaths, player.Accuracy,
 	)
 	if err != nil {
@@ -140,7 +145,7 @@ func (this *PlayerRepo) Onlines() ([]DbPlayer, error) {
 
 func (this *PlayerRepo) scanPlayer(rows *sql.Rows) (DbPlayer, error) {
 	var p DbPlayer
-	var rank int
+	var rank sql.NullInt32
 
 	err := rows.Scan(
 		&p.ID,
@@ -149,7 +154,13 @@ func (this *PlayerRepo) scanPlayer(rows *sql.Rows) (DbPlayer, error) {
 		&p.Player.Deaths, &p.Player.Accuracy,
 	)
 
-	p.Player.Rank = &rank
+	if rank.Valid {
+		var r int
+		r = int(rank.Int32)
+		p.Player.Rank = &r
+	} else {
+		p.Player.Rank = nil
+	}
 
 	return p, err
 }

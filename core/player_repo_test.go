@@ -49,9 +49,11 @@ func TestPlayerRepoOnline(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	rank := 1
 	_, err = repo.AddPlayer(Player{
 		Name:    "thekhanj",
 		Country: "iran",
+		Rank:    &rank,
 	})
 	if err != nil {
 		t.Fatal(err)
