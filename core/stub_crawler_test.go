@@ -2,6 +2,8 @@ package core
 
 import (
 	"errors"
+	"sort"
+	"sync"
 
 	rd "github.com/Pallinder/go-randomdata"
 )
@@ -14,10 +16,14 @@ type internalPlayer struct {
 }
 
 type StubCrawler struct {
+	mutex   sync.Mutex
 	players map[string]*internalPlayer
 }
 
 func (this *StubCrawler) MakeOnline(name string) error {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
 	p, ok := this.players[name]
 	if !ok {
 		return ERR_FAKE_PLAYER_NOT_FOUND
@@ -29,6 +35,9 @@ func (this *StubCrawler) MakeOnline(name string) error {
 }
 
 func (this *StubCrawler) MakeOffline(name string) error {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
 	p, ok := this.players[name]
 	if !ok {
 		return ERR_FAKE_PLAYER_NOT_FOUND
@@ -40,6 +49,9 @@ func (this *StubCrawler) MakeOffline(name string) error {
 }
 
 func (this *StubCrawler) RemovePlayer(name string) error {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
 	if _, ok := this.players[name]; !ok {
 		return ERR_FAKE_PLAYER_NOT_FOUND
 	}
@@ -52,6 +64,9 @@ func (this *StubCrawler) RemovePlayer(name string) error {
 }
 
 func (this *StubCrawler) AddPlayer() string {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
 	var rank int
 
 	p := Player{
@@ -71,15 +86,24 @@ func (this *StubCrawler) AddPlayer() string {
 
 	this.players[p.Name] = ip
 
+	this.rerankPlayers()
+
 	return p.Name
 }
 
 func (this *StubCrawler) Stats(page int) ([]Player, error) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
 	ret := make([]Player, 0)
 
 	for _, p := range this.players {
 		ret = append(ret, p.player)
 	}
+
+	sort.Slice(ret, func(i, j int) bool {
+		return *ret[i].Rank < *ret[j].Rank
+	})
 
 	l := (page - 1) * 50
 	r := page * 50
@@ -92,6 +116,9 @@ func (this *StubCrawler) Stats(page int) ([]Player, error) {
 }
 
 func (this *StubCrawler) Online() ([]Player, error) {
+	this.mutex.Lock()
+	defer this.mutex.Unlock()
+
 	ret := make([]Player, 0)
 
 	for _, p := range this.players {
@@ -99,6 +126,10 @@ func (this *StubCrawler) Online() ([]Player, error) {
 			ret = append(ret, p.player)
 		}
 	}
+
+	sort.Slice(ret, func(i, j int) bool {
+		return *ret[i].Rank < *ret[j].Rank
+	})
 
 	return ret, nil
 }

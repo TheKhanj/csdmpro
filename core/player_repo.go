@@ -141,14 +141,15 @@ func (this *PlayerRepo) Onlines() ([]DbPlayer, error) {
 func (this *PlayerRepo) scanPlayer(rows *sql.Rows) (DbPlayer, error) {
 	var p DbPlayer
 	var rank int
-	p.Player.Rank = &rank
 
 	err := rows.Scan(
 		&p.ID,
 		&p.Player.Name, &p.Player.Country,
-		&p.Player.Rank, &p.Player.Score, &p.Player.Kills,
+		&rank, &p.Player.Score, &p.Player.Kills,
 		&p.Player.Deaths, &p.Player.Accuracy,
 	)
+
+	p.Player.Rank = &rank
 
 	return p, err
 }

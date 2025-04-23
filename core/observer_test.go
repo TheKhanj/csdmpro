@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 type TestingObserverFactory struct {
 	Crawler  *StubCrawler
 	Observer *Observer
+	Repo     *PlayerRepo
 
 	dbF db.FakeDbFactory
 }
@@ -26,6 +28,7 @@ func (this *TestingObserverFactory) Init(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	this.Repo = repo
 	this.Crawler = NewStubCrawler()
 	this.Observer = NewObserver(repo, this.Crawler, 0, 0)
 }
@@ -49,6 +52,18 @@ func TestObserverSimply(t *testing.T) {
 
 	gotOnline := tof.Observer.Bus.Sub(GotOnlineTopic)
 	gotOffline := tof.Observer.Bus.Sub(GotOfflineTopic)
+	defer func() {
+		go tof.Observer.Bus.Unsub(gotOnline)
+		go tof.Observer.Bus.Unsub(gotOffline)
+		for {
+			select {
+			case <-gotOnline:
+			case <-gotOffline:
+			default:
+				return
+			}
+		}
+	}()
 
 	select {
 	case <-ctx.Done():
@@ -56,6 +71,14 @@ func TestObserverSimply(t *testing.T) {
 	case pId := <-gotOnline:
 		if pId != 1 {
 			t.Fatal("player id is not 1")
+		}
+		p, _ := tof.Repo.GetPlayer(pId)
+		if *p.Player.Rank != 1 {
+			t.Fatal(
+				fmt.Sprintf(
+					"expected first player to have rank 1 got %d", *p.Player.Rank,
+				),
+			)
 		}
 	}
 
@@ -69,140 +92,66 @@ func TestObserverSimply(t *testing.T) {
 			t.Fatal("player id is not 1")
 		}
 	}
-
-	go tof.Observer.Bus.Unsub(gotOnline)
-	go tof.Observer.Bus.Unsub(gotOffline)
-	for {
-		select {
-		case <-gotOnline:
-		case <-gotOffline:
-		default:
-			return
-		}
-	}
-}
-
-func TestObserverStats(t *testing.T) {
-	// tof := TestingObserverFactory{}
-	// tof.Init(t)
-	// defer tof.Deinit()
-
-	// ctx, cancel := context.WithTimeout(t.Context(), time.Second*5)
-	// defer cancel()
-
-	// go tof.Observer.Start(ctx)
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case <-tof.Observer.UpdatedPlayer:
-	// 		case <-tof.Observer.AddedPlayer:
-	// 			// throw away channels
-	// 		}
-	// 	}
-	// }()
-
-	// c := tof.Crawler
-
-	// oneRank := 1
-	// player := Player{
-	// 	Name:    "thekhanj",
-	// 	Country: "Iran 😭, fuck IRAN, ISLAMIC REPUBLIC to be more accurate. Iran is lovely❤️",
-	// 	Rank:    &oneRank,
-	// }
-	// c.players = append(c.players, player)
-
-	// select {
-	// case <-ctx.Done():
-	// 	t.Fatal("expected new player event to pass in")
-	// case id := <-tof.Observer.AddedPlayer:
-	// 	t.Logf("new player with id %d created", id)
-	// }
-
-	// twoRank := 2
-	// c.players[0].Rank = &twoRank
-
-	// select {
-	// case <-ctx.Done():
-	// 	t.Fatal("expected update player event to pass in")
-	// case id := <-tof.Observer.UpdatedPlayer:
-	// 	t.Logf("player with id %d updated", id)
-	// }
 }
 
 func TestObserverMultipleEvents(t *testing.T) {
-	// tof := TestingObserverFactory{}
-	// tof.Init(t)
-	// defer tof.Deinit()
+	tof := TestingObserverFactory{}
+	tof.Init(t)
+	defer tof.Deinit()
 
-	// ctx, cancel := context.WithTimeout(t.Context(), time.Second*5)
-	// defer cancel()
+	ctx, cancel := context.WithTimeout(t.Context(), time.Second*5)
+	defer cancel()
 
-	// go tof.Observer.Start(ctx)
-	// go func() {
-	// 	for {
-	// 		select {
-	// 		case <-tof.Observer.UpdatedPlayer:
-	// 		case <-tof.Observer.AddedPlayer:
-	// 			// throw away channels
-	// 		}
-	// 	}
-	// }()
+	go tof.Observer.Start(ctx)
 
-	// c := tof.Crawler
+	gotOnline := tof.Observer.Bus.Sub(GotOnlineTopic)
+	gotOffline := tof.Observer.Bus.Sub(GotOfflineTopic)
+	defer func() {
+		go tof.Observer.Bus.Unsub(gotOnline)
+		go tof.Observer.Bus.Unsub(gotOffline)
+		for {
+			select {
+			case <-gotOnline:
+			case <-gotOffline:
+			default:
+				return
+			}
+		}
+	}()
 
-	// players := make([]Player, 0, 100)
-	// for i := 0; i < 100; i++ {
-	// 	players = append(players, Player{
-	// 		Name:    fmt.Sprintf("player-%d", i),
-	// 		Country: "anything",
-	// 	})
-	// }
-	// player_index := 0
-	// for i := 0; i < 10; i++ {
-	// 	p := players[player_index]
-	// 	player_index++
+	for i := 0; i < 50; i++ {
+		tof.Crawler.AddPlayer()
+	}
+	players, _ := tof.Crawler.Stats(1)
 
-	// 	c.onlines = append(c.onlines, p)
+	for i := 0; i < 10; i++ {
+		p := players[i]
 
-	// 	event := <-tof.Observer.GotOnline
-	// 	if event.Player.Name != p.Name {
-	// 		t.Fatalf("unexpected player name")
-	// 	}
-	// }
+		tof.Crawler.MakeOnline(p.Name)
 
-	// for i := 0; i < 5; i++ {
-	// 	p := players[player_index-1-i]
+		eventPlayerId := <-gotOnline
+		eventPlayer, err := tof.Repo.GetPlayer(eventPlayerId)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if eventPlayer.Player.Name != p.Name {
+			t.Fatalf("unexpected player name (%s, %s)", eventPlayer.Player.Name, p.Name)
+		}
+	}
 
-	// 	c.onlines = c.onlines[0 : len(c.Onlines)-1]
+	onlines, _ := tof.Crawler.Online()
+	for i := 0; i < 5; i++ {
+		p := onlines[i]
 
-	// 	event := <-tof.Observer.GotOffline
-	// 	if event.Player.Name != p.Name {
-	// 		t.Fatalf("unexpected player name")
-	// 	}
-	// }
+		tof.Crawler.MakeOffline(p.Name)
 
-	// for i := 0; i < 10; i++ {
-	// 	p := players[player_index]
-	// 	player_index++
-
-	// 	c.onlines = append(c.onlines, p)
-
-	// 	event := <-tof.Observer.GotOnline
-	// 	if event.Player.Name != p.Name {
-	// 		t.Fatalf("unexpected player name")
-	// 	}
-	// }
-
-	// player_index = 5
-	// for i := 0; i < 5; i++ {
-	// 	p := players[player_index]
-	// 	player_index++
-
-	// 	c.onlines = append(c.onlines, p)
-
-	// 	event := <-tof.Observer.GotOnline
-	// 	if event.Player.Name != p.Name {
-	// 		t.Fatalf("unexpected player name")
-	// 	}
-	// }
+		eventPlayerId := <-gotOffline
+		eventPlayer, err := tof.Repo.GetPlayer(eventPlayerId)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if eventPlayer.Player.Name != p.Name {
+			t.Fatalf("unexpected player name")
+		}
+	}
 }
