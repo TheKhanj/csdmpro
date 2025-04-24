@@ -302,7 +302,7 @@ func CreatePlayerRepo(db *sql.DB) (*PlayerRepo, error) {
 	createOnlinesTable := `
 		CREATE TABLE IF NOT EXISTS onlines (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			player_id INTEGER UNIQUE,
+			player_id INTEGER,
 			start_time INTEGER NOT NULL,
 			end_time INTEGER,
 			FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE RESTRICT
