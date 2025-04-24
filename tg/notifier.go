@@ -26,7 +26,7 @@ func (this *Notifier) Start(ctx context.Context) {
 	log.Println("notifier: started")
 	defer log.Println("notifier: stopped")
 
-	this.wg.Add(4)
+	this.wg.Add(2)
 
 	go func() {
 		defer this.wg.Done()
@@ -38,7 +38,7 @@ func (this *Notifier) Start(ctx context.Context) {
 		defer this.wg.Done()
 		this.gotOffline = this.observer.Bus.Sub(core.GotOfflineTopic)
 
-		go this.handleEvent(this.gotOffline, false)
+		this.handleEvent(this.gotOffline, false)
 	}()
 
 	<-ctx.Done()
