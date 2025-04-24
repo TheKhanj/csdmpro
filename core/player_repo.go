@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 )
 
 type PlayerId int
@@ -72,10 +73,11 @@ func (this *PlayerRepo) GetByRank(rank int) ([]DbPlayer, error) {
 
 func (this *PlayerRepo) UpdatePlayer(id PlayerId, player Player) error {
 	insertSQL := `
-	UPDATE players
-	SET name = ?, country = ?, rank = ?, score = ?,
-		kills = ?, deaths = ?, accuracy = ?
-	WHERE id = ?`
+		UPDATE players
+		SET name = ?, country = ?, rank = ?, score = ?,
+			kills = ?, deaths = ?, accuracy = ?
+		WHERE id = ?
+	`
 
 	_, err := this.Database.Exec(
 		insertSQL,
@@ -117,9 +119,9 @@ func (this *PlayerRepo) Onlines() ([]DbPlayer, error) {
 	rows, err := this.Database.Query(
 		fmt.Sprintf(
 			`SELECT %s
-				FROM players_online as online
-				INNER JOIN players as player on player.id = online.player_id
-				WHERE player.rank IS NOT NULL
+				FROM onlines AS o
+				INNER JOIN players as player on player.id = o.player_id
+				WHERE o.end_time IS NULL AND player.rank IS NOT NULL
 				ORDER BY player.rank ASC
 			`,
 			this.getPlayerFields("player."),
@@ -217,15 +219,24 @@ func (this *PlayerRepo) GetPlayer(id PlayerId) (DbPlayer, error) {
 	return this.scanPlayer(rows)
 }
 
-func (this *PlayerRepo) AddOnlinePlayer(playerId PlayerId) error {
-	insertSQL := `INSERT INTO players_online (player_id) VALUES (?)`
-	_, err := this.Database.Exec(insertSQL, playerId)
+func (this *PlayerRepo) MarkOnline(playerId PlayerId) error {
+	now := time.Now().Unix()
+	insertSQL := `
+		INSERT INTO onlines (player_id, start_time)
+		VALUES (?, ?)
+	`
+	_, err := this.Database.Exec(insertSQL, playerId, now)
 	return err
 }
 
-func (this *PlayerRepo) RemoveOnlinePlayer(playerId PlayerId) error {
-	insertSQL := `DELETE FROM players_online WHERE player_id = ?`
-	_, err := this.Database.Exec(insertSQL, playerId)
+func (this *PlayerRepo) MarkOffline(playerId PlayerId) error {
+	now := time.Now().Unix()
+	updateSQL := `
+		UPDATE onlines
+		SET end_time = ?
+		WHERE player_id = ? AND end_time IS NULL
+	`
+	_, err := this.Database.Exec(updateSQL, now, playerId, now)
 	return err
 }
 
@@ -273,30 +284,48 @@ func CreatePlayerRepo(db *sql.DB) (*PlayerRepo, error) {
 	}
 
 	createPlayersRankIndex := `
-		CREATE INDEX IF NOT EXISTS idx_rank ON
+		CREATE INDEX IF NOT EXISTS idx_players_rank ON
 		players(rank)`
-
 	_, err = db.Exec(createPlayersRankIndex)
 	if err != nil {
 		return nil, err
 	}
 
 	createPlayersNameRankIndex := `
-		CREATE INDEX IF NOT EXISTS idx_name_rank
+		CREATE INDEX IF NOT EXISTS idx_players_name_rank
 		ON players(name, rank)`
-
 	_, err = db.Exec(createPlayersNameRankIndex)
 	if err != nil {
 		return nil, err
 	}
 
-	createPlayersOnlineTable := `
-		CREATE TABLE IF NOT EXISTS players_online (
+	createOnlinesTable := `
+		CREATE TABLE IF NOT EXISTS onlines (
 			id INTEGER PRIMARY KEY AUTOINCREMENT,
 			player_id INTEGER UNIQUE,
+			start_time INTEGER NOT NULL,
+			end_time INTEGER,
 			FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE RESTRICT
 		);`
-	_, err = db.Exec(createPlayersOnlineTable)
+	_, err = db.Exec(createOnlinesTable)
+	if err != nil {
+		return nil, err
+	}
+
+	createOnlinesStartTimeIndex := `
+		CREATE INDEX IF NOT EXISTS idx_onlines_start_time
+		ON onlines(player_id, start_time, end_time)
+	`
+	_, err = db.Exec(createOnlinesStartTimeIndex)
+	if err != nil {
+		return nil, err
+	}
+
+	createOnlinesEndTimeIndex := `
+		CREATE INDEX IF NOT EXISTS idx_onlines_end_time
+		ON onlines(player_id, end_time)
+	`
+	_, err = db.Exec(createOnlinesEndTimeIndex)
 	if err != nil {
 		return nil, err
 	}

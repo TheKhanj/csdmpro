@@ -93,7 +93,7 @@ func (this *Observer) handleOnlinePlayers(areOnlines []Player) error {
 
 	for id, isOnline := range isOnline {
 		if isOnline && !wasOnline[id] {
-			err := this.repo.AddOnlinePlayer(id)
+			err := this.repo.MarkOnline(id)
 			if err != nil {
 				log.Printf("observer: %s", err)
 			}
@@ -103,7 +103,7 @@ func (this *Observer) handleOnlinePlayers(areOnlines []Player) error {
 
 	for id, wasOnline := range wasOnline {
 		if wasOnline && !isOnline[id] {
-			err := this.repo.RemoveOnlinePlayer(id)
+			err := this.repo.MarkOffline(id)
 			if err != nil {
 				log.Printf("observer: %s", err)
 			}

@@ -72,7 +72,7 @@ func TestPlayerRepoOnline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err = repo.AddOnlinePlayer(p.ID)
+	err = repo.MarkOnline(p.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -93,7 +93,7 @@ func TestPlayerRepoOnline(t *testing.T) {
 		t.Fatal("number of online players must be 1")
 	}
 
-	err = repo.RemoveOnlinePlayer(p.ID)
+	err = repo.MarkOffline(p.ID)
 	if err != nil {
 		t.Fatal(err)
 	}
