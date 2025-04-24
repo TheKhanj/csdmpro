@@ -25,10 +25,12 @@ func (this *OnlinesController) Index(
 		return nil, err
 	}
 
-	msg := tgbotapi.NewMessage(
-		ctx.GetChatId(),
-		"📊 Live player stats from the battlefield — updated in real-time.",
-	)
+	txt := "📊 Live player stats from the battlefield — updated in real-time."
+	if len(players) == 0 {
+		txt += "\n\nThere are no players online!"
+	}
+
+	msg := tgbotapi.NewMessage(ctx.GetChatId(), txt)
 
 	rows := make([][]tgbotapi.InlineKeyboardButton, 0)
 
