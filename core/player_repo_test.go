@@ -50,7 +50,7 @@ func TestPlayerRepoOnline(t *testing.T) {
 	}
 
 	rank := 1
-	_, err = repo.AddPlayer(Player{
+	playerId, err := repo.AddPlayer(Player{
 		Name:    "thekhanj",
 		Country: "iran",
 		Rank:    &rank,
@@ -59,7 +59,7 @@ func TestPlayerRepoOnline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	isOnline, err := repo.IsOnline("thekhanj")
+	isOnline, err := repo.IsOnline(playerId)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -77,7 +77,7 @@ func TestPlayerRepoOnline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	isOnline, err = repo.IsOnline("thekhanj")
+	isOnline, err = repo.IsOnline(playerId)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -98,7 +98,7 @@ func TestPlayerRepoOnline(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	isOnline, err = repo.IsOnline("thekhanj")
+	isOnline, err = repo.IsOnline(playerId)
 	if err != nil {
 		t.Fatal(err)
 	}

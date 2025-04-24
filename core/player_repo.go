@@ -100,14 +100,14 @@ func (this *PlayerRepo) Unrank(rank int) error {
 	return err
 }
 
-func (this *PlayerRepo) IsOnline(name string) (bool, error) {
+func (this *PlayerRepo) IsOnline(id PlayerId) (bool, error) {
 	onlines, err := this.Onlines()
 	if err != nil {
 		return false, err
 	}
 
 	for _, online := range onlines {
-		if online.Player.Name == name {
+		if online.ID == id {
 			return true, nil
 		}
 	}
