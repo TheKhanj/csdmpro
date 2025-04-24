@@ -18,7 +18,7 @@ func (this *FakeDbFactory) Init() (*sql.DB, error) {
 	tempFile.Close()
 
 	this.tmpFilePath = tempFile.Name()
-	this.db, err = sql.Open("sqlite3", tempFile.Name())
+	this.db, err = OpenDb(tempFile.Name())
 	if err != nil {
 		return nil, err
 	}

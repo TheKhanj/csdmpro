@@ -11,7 +11,7 @@ import (
 type Database *sql.DB
 
 func ProvideDb() Database {
-	db, err := sql.Open("sqlite3", "database.db")
+	db, err := OpenDb("database.db")
 	if err != nil {
 		log.Fatal(err)
 	}
