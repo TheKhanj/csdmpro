@@ -163,16 +163,21 @@ func (this *Observer) observeStatsPage(page int) error {
 	return nil
 }
 
-func (this *Observer) observeStats() {
+func (this *Observer) observeStats(ctx context.Context) {
 	pageCount := 20
 	if os.Getenv("ENV") == "dev" {
 		pageCount = 1
 	}
 
 	for page := 1; page <= pageCount; page++ {
-		err := this.observeStatsPage(page)
-		if err != nil {
-			log.Printf("observer: stats: page %d: %s", page, err)
+		select {
+		case <-ctx.Done():
+			return
+		default:
+			err := this.observeStatsPage(page)
+			if err != nil {
+				log.Printf("observer: stats: page %d: %s", page, err)
+			}
 		}
 	}
 }
@@ -208,7 +213,7 @@ func (this *Observer) Start(ctx context.Context) {
 		defer log.Println("observer: stopped observing stats")
 
 		for {
-			this.observeStats()
+			this.observeStats(ctx)
 
 			select {
 			case <-ctx.Done():
