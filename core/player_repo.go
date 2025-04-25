@@ -121,7 +121,7 @@ func (this *PlayerRepo) Onlines() ([]DbPlayer, error) {
 			`SELECT %s
 				FROM onlines AS o
 				INNER JOIN players as player on player.id = o.player_id
-				WHERE o.end_time IS NULL AND player.rank IS NOT NULL
+				WHERE o.end_time IS NULL
 				ORDER BY player.rank ASC
 			`,
 			this.getPlayerFields("player."),
