@@ -167,6 +167,12 @@ func (this *StatsController) PlayerIndex(
 	msg.ReplyMarkup = tgbotapi.NewInlineKeyboardMarkup(
 		tgbotapi.NewInlineKeyboardRow(
 			tgbotapi.NewInlineKeyboardButtonData(
+				"🔄 Refresh",
+				fmt.Sprintf("/players/%d", playerId),
+			),
+		),
+		tgbotapi.NewInlineKeyboardRow(
+			tgbotapi.NewInlineKeyboardButtonData(
 				"🔙 Back",
 				"/stats/0",
 			),
