@@ -23,8 +23,6 @@ github.com/stretchr/testify v1.8.4 h1:CcVxjf3Q8PM0mHUKJCdn+eZZtm5yQwehR5yeSVQQcU
 github.com/stretchr/testify v1.8.4/go.mod h1:sz/lmYIOXD/1dqDmKjjqLyZ2RngseejIcXlSw2iwfAo=
 github.com/thekhanj/drouter v0.0.1 h1:s256CaP0Y40sGMYgXa803Fm9bDleMy4YxVGOqeVrbe4=
 github.com/thekhanj/drouter v0.0.1/go.mod h1:GMpfDiJrLLaKiJE5q+jzVzWJaLQ0ksuHu84ZcD3Bz4w=
-github.com/thekhanj/tgool v0.0.0-20250404164248-8d420e85911b h1:5TfqS8UHfnvUNLMgRv+O2+4madfOmrKqt2s9ObThbKM=
-github.com/thekhanj/tgool v0.0.0-20250404164248-8d420e85911b/go.mod h1:ppZ4jvVYnE/0o2b95ud1I5Q9oeyEmHVTupteB/qzLpg=
 github.com/yuin/goldmark v1.4.13/go.mod h1:6yULJ656Px+3vBD8DxQVa3kxgyrAnzto9xy5taEt/CY=
 golang.org/x/crypto v0.0.0-20190308221718-c2843e01d9a2/go.mod h1:djNgcEr1/C05ACkg1iLfiJU5Ep61QUkGW8qpdssI0+w=
 golang.org/x/crypto v0.0.0-20210921155107-089bfa567519/go.mod h1:GvvjBRRGRdwPK5ydBHafDWAxML/pGHZbMvKqRZ5+Abc=

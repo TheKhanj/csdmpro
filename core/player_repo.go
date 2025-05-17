@@ -2,7 +2,6 @@ package core
 
 import (
 	"database/sql"
-	"errors"
 	"fmt"
 	"time"
 )
@@ -18,12 +17,11 @@ type PlayerRepo struct {
 	Database *sql.DB
 }
 
-var ERR_PLAYER_NOT_FOUND error = errors.New("player not found")
-
 func (this *PlayerRepo) AddPlayer(player Player) (PlayerId, error) {
 	insertSQL := `
-	INSERT INTO players (name, country, rank, score, kills, deaths, accuracy)
-	VALUES (?, ?, ?, ?, ?, ?, ?)`
+		INSERT INTO players (name, country, rank, score, kills, deaths, accuracy)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`
 
 	var rank any = player.Rank
 	if player.Rank != nil {

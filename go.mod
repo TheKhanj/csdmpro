@@ -17,3 +17,5 @@ require (
 	github.com/andybalholm/cascadia v1.3.3 // indirect
 	github.com/thekhanj/drouter v0.0.1 // indirect
 )
+
+replace github.com/thekhanj/tgool => ../tgool

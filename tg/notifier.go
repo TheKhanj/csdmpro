@@ -12,8 +12,9 @@ import (
 )
 
 type Notifier struct {
-	gotOnline  chan core.PlayerId
-	gotOffline chan core.PlayerId
+	gotOnline      chan core.PlayerId
+	gotOffline     chan core.PlayerId
+	usernameChange chan core.UsernameChange
 
 	observer      *core.Observer
 	watchlistRepo *repo.WatchlistRepo
@@ -26,7 +27,7 @@ func (this *Notifier) Start(ctx context.Context) {
 	log.Println("notifier: started")
 	defer log.Println("notifier: stopped")
 
-	this.wg.Add(2)
+	this.wg.Add(3)
 
 	go func() {
 		defer this.wg.Done()
@@ -40,9 +41,25 @@ func (this *Notifier) Start(ctx context.Context) {
 
 		this.handleEvent(this.gotOffline, false)
 	}()
+	go func() {
+		defer this.wg.Done()
+		this.usernameChange = this.observer.UsernameChangeBus.Sub(core.UsernameChangeTopic)
+
+		this.handleUsernameChange()
+	}()
 
 	<-ctx.Done()
 	this.stop()
+}
+
+func (this *Notifier) handleUsernameChange() {
+	for u := range this.usernameChange {
+		log.Printf("notifier: username changed %s -> %s", u.From, u.To)
+		msg := fmt.Sprintf("👀 Player %s changed their username to %s", u.From, u.To)
+		myChatId := int64(209245565)
+
+		this.bot.Send(tgbotapi.NewMessage(myChatId, msg))
+	}
 }
 
 func (this *Notifier) stop() {
@@ -50,6 +67,7 @@ func (this *Notifier) stop() {
 
 	go this.observer.Bus.Unsub(this.gotOnline)
 	go this.observer.Bus.Unsub(this.gotOffline)
+	go this.observer.UsernameChangeBus.Unsub(this.usernameChange)
 
 	this.wg.Wait()
 }
