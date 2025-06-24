@@ -1,0 +1,52 @@
+#!/usr/bin/env sh
+
+if [ -z "$API_TOKEN" ]; then
+	echo "error: API_TOKEN not provided"
+	exit 1
+fi
+
+file="$1"
+if ! [ -f "$file" ]; then
+	echo "error: $file does not exist"
+	exit 2
+fi
+
+scp "$file" root@cs.thekhanj.ir:/tmp || {
+	echo "error: failed copying file onto remote server"
+	exit 3
+}
+
+ssh root@cs.thekhanj.ir "bash -s" <<-EOF
+	cd /tmp
+	tar xzvf csdmpro.tar.gz || exit 1
+	cp csdmpro /usr/bin
+
+	cat >/etc/systemd/system/csdmpro.service <<-FART
+		[Unit]
+		Description=CSDMPRO Telegram Bot Daemon
+		After=network.target
+		Wants=network.target
+
+		[Service]
+		Type=simple
+		Environment="API_TOKEN=$API_TOKEN"
+		ExecStart=/usr/bin/csdmpro
+		Restart=always
+		RestartSec=2s
+		User=root
+		Group=root
+
+		[Install]
+		WantedBy=multi-user.target
+	FART
+
+
+	systemctl daemon-reload &&
+		systemctl enable csdmpro &&
+		systemctl restart csdmpro
+EOF
+
+if [ "$?" -ne 0 ]; then
+	echo 'error: ssh deployment failed'
+	exit 4
+fi

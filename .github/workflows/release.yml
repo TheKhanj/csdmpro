@@ -56,3 +56,33 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: csdmpro.tar.gz
+
+  deploy:
+    name: Deploy csdmpro
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+        with:
+            path: source
+
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: csdmpro-release
+          path: .
+
+      - name: Set up SSH key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan cs.thekhanj.ir >> ~/.ssh/known_hosts
+
+      - name: Deploy using the script
+        env:
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: ./source/ci/deploy ./csdmpro.tar.gz
