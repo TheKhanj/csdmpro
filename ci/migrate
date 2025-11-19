@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+# RUN ON OLD HOST
+systemctl stop csdmpro
+new_host="SHIT"
+for file in /database.db \
+	/etc/systemd/system/csdmpro.service \
+	/usr/bin/csdmpro; do
+	rsync -avt "$file" root@"$new_host":"$file"
+done
+
+# RUN ON NEW HOST
+systemctl enable --now csdmpro
