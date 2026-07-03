@@ -10,4 +10,6 @@ RUN make
 
 FROM alpine
 COPY --from=build /src/csdmpro /usr/local/bin/
+RUN mkdir /csdmpro
+WORKDIR /csdmpro
 ENTRYPOINT ["csdmpro"]
