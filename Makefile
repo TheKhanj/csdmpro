@@ -1,3 +1,5 @@
+CGO_ENABLED ?= 0
+CC ?= gcc
 GO_FILES = $(shell find core -type f -name '*.go') \
 						$(shell find tg -type f -name '*.go') \
 						$(shell find db -type f -name '*.go') \
@@ -11,7 +13,7 @@ wire: $(GO_FILES) $(DEV_GO_FILES)
 	wire
 
 build: $(GO_FILES) $(DEV_GO_FILES) wire
-	go build
+	CGO_ENABLED=$(CGO_ENABLED) CC=$(CC) go build
 
 build_watch: $(GO_FILES)
 	printf "%s\n" $(GO_FILES) $(DEV_GO_FILES) | \
